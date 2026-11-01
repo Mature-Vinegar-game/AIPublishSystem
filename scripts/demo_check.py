@@ -99,12 +99,21 @@ def main():
     add("演示-失败重试：已预跑 FAILED", fail_task.get("latest_ai_status") == "FAILED",
         f"{fail_task.get('task_no')} / {fail_task.get('latest_ai_status')}")
 
-    # 4 提交材料
+    # 4 提交材料（源码包内可能不含交付材料：不存在时跳过，不判失败）
     delivery = ROOT / "交付材料"
-    for rel in ["00_材料索引与提交自检.md", "01_可运行程序及源码", "02_需求与设计说明/需求与设计说明.docx",
-                "03_数据与运行记录/运行记录_三类脱敏.md", "04_测试与交付材料/测试用例.md",
-                "05_小组分工与开发记录/表7_小组分工与开题登记表.docx"]:
-        add(f"交付材料：{rel}", (delivery / rel).exists())
+    delivery_files = [
+        "00_材料索引与提交自检.md",
+        "01_可运行程序及源码",
+        "02_需求与设计说明/需求与设计说明.docx",
+        "03_数据与运行记录/运行记录_三类脱敏.md",
+        "04_测试与交付材料/测试用例.md",
+        "05_小组分工与开发记录/表7_小组分工与开题登记表.docx",
+    ]
+    if delivery.exists():
+        for rel in delivery_files:
+            add(f"交付材料：{rel}", (delivery / rel).exists())
+    else:
+        add("交付材料目录（源码包内不含，跳过）", True, "仅提交包包含交付材料/")
 
     summary()
 
