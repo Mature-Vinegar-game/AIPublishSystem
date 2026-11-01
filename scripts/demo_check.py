@@ -85,14 +85,19 @@ def main():
     except Exception:
         items = []
     titles = {item.get("title"): item for item in items}
-    add("已完成演示任务 BT-DEMO-0001", any(item.get("task_no") == "BT-DEMO-0001" for item in items))
-    for title in ["演示-基线待运行", "演示-数据不足", "演示-失败重试"]:
-        add(f"演示任务存在：{title}", title in titles, titles.get(title, {}).get("task_no"))
-    failed_ready = any(item.get("title") == "演示-失败重试" and item.get("latest_ai_status") == "FAILED" for item in items)
-    if not failed_ready:
-        # 兼容字段名
-        failed_ready = any(item.get("title") == "演示-失败重试" for item in items)
-    add("失败演示任务已预置", failed_ready)
+    by_no = {item.get("task_no"): item for item in items}
+    demo = by_no.get("BT-DEMO-0001") or {}
+    add("BT-DEMO-0001 已完成且≥2 版本", demo.get("status") == "COMPLETED" and int(demo.get("versions_count") or 0) >= 2,
+        f"{demo.get('status')} / versions={demo.get('versions_count')}")
+    base_task = titles.get("演示-基线待运行") or {}
+    add("演示-基线待运行：PENDING 未运行", base_task.get("status") == "PENDING" and not base_task.get("latest_ai_status"),
+        f"{base_task.get('task_no')} / {base_task.get('latest_ai_status')}")
+    data_task = titles.get("演示-数据不足") or {}
+    add("演示-数据不足：已预跑 SUCCEEDED", data_task.get("latest_ai_status") == "SUCCEEDED",
+        f"{data_task.get('task_no')} / {data_task.get('latest_ai_status')}")
+    fail_task = titles.get("演示-失败重试") or {}
+    add("演示-失败重试：已预跑 FAILED", fail_task.get("latest_ai_status") == "FAILED",
+        f"{fail_task.get('task_no')} / {fail_task.get('latest_ai_status')}")
 
     # 4 提交材料
     delivery = ROOT / "交付材料"

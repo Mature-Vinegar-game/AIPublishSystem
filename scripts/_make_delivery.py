@@ -283,7 +283,7 @@ def main():
 | 演示-数据不足 | `BT20261101-0034` / 35 | PENDING（已预跑 SUCCEEDED 备份） | 缺失依据、不虚构金额 |
 | 演示-失败重试 | `BT20261101-0035` / 36 | PENDING（已预跑 FAILED / TOOL_TIMEOUT 备份） | 失败态 + 现场重试成功 |
 
-> 演示前可执行 `python scripts/demo_check.py` 一键自检（22 项：真实模式/Key/限额/演示任务/交付材料）。
+> 演示前可执行 `python scripts/demo_check.py` 一键自检（21 项：真实模式/Key/限额/演示任务/交付材料）。
 > 演示数据恢复：停服后把 `data/demo_snapshot_20261101.db` 复制为 `data/app.db`（同时删除 `-wal/-shm`），再启动即回到 2026-11-01 演示状态。
 """)
 
@@ -322,7 +322,7 @@ def main():
 - [x] 至少 2 个可查版本、审核退回/通过、越权后端拒绝
 - [x] 3 类脱敏运行记录齐（03）
 - [x] 三张图 + 图-程序对照；演示 HTML 离线可用
-- [x] 验收自检报告（04/验收自检报告.md）+ 一键自检 `python scripts/demo_check.py`（22/22 通过）
+- [x] 验收自检报告（04/验收自检报告.md）+ 一键自检 `python scripts/demo_check.py`（21/21 通过）
 - [x] README 含依赖/初始化/运行/模型切换说明
 - [x] 密钥不入源码；`.env`/`data/`/`logs/` 未打包
 - [ ] 小组真实姓名/学号/组号（待替换）
