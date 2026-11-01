@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -33,3 +33,8 @@ logs/
 .idea/
 Thumbs.db
 desktop.ini
+
+# 录屏中间产物（保留最终 mp4）
+evidence/recordings/*.webm
+evidence/recordings/frames/
+

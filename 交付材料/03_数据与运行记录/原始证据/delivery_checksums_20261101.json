@@ -1,11 +1,11 @@
 {
   "submission": {
-    "size": 1500302,
-    "sha256": "a9df5e1cd64537bd95aae7272f6a6e27155f69d5dd1196727b442cb40541964d"
+    "size": 1508386,
+    "sha256": "61d1eb81f03862f3366917e87973d16c52dbac35a19a75dd872073014a86f02c"
   },
   "source": {
-    "size": 771438,
-    "sha256": "0c0806711695eb49f23f8812c4a73d68b45406c7c9b8fca185ac2e8f789472ca"
+    "size": 773083,
+    "sha256": "91a30ef1fb81df054531519460d69af98a8299c6b15f9797ed936b199917d3e5"
   },
   "docx": {
     "size": 513349,
@@ -19,6 +19,6 @@
     "size": 3325,
     "sha256": "fda1147adf70827bde43b4e8ea6a43770c77654ba8eca78f48c665c6bc68bd10"
   },
-  "delivery_files": 43,
-  "submission_entries": 43
+  "delivery_files": 48,
+  "submission_entries": 48
 }
