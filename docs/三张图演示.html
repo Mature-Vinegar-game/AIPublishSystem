@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>印制参数校验与成本测算 AI 系统 · 三张图（HTML 演示版）</title>
+<style>
+  :root{
+    --ink:#12263f; --ink-2:#3b4a5c; --muted:#6b7a8c; --line:#dfe6ef;
+    --bg:#f4f7fb; --card:#ffffff; --blue:#1f4e79; --blue-2:#2e74b5; --blue-soft:#e8f1fb;
+    --amber:#b26a00; --amber-soft:#fff4e0; --green:#1e7b45; --green-soft:#e6f5ec;
+    --red:#b42318; --red-soft:#fdeceb; --purple:#5b3ea8; --purple-soft:#f0ebfb;
+    --shadow:0 2px 10px rgba(20,40,80,.07), 0 12px 30px rgba(20,40,80,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 500px at 10% -10%, #e6f0fb 0%, transparent 60%),
+      radial-gradient(900px 400px at 110% 0%, #eef4ff 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue-2); text-decoration:none}
+  header.top{
+    position:relative; padding:34px 6vw 26px; color:#fff;
+    background:linear-gradient(120deg,#173b63 0%,#1f4e79 45%,#2e74b5 100%);
+    overflow:hidden;
+  }
+  header.top::after{
+    content:""; position:absolute; inset:auto -10% -60% auto; width:520px; height:520px;
+    background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%); border-radius:50%;
+  }
+  .brand{font-size:26px; font-weight:700; letter-spacing:.5px}
+  .sub{margin-top:8px; font-size:14px; color:#d6e6f7}
+  .meta-row{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px}
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px;
+    border:1px solid rgba(255,255,255,.35); border-radius:999px; color:#eaf3ff; background:rgba(255,255,255,.08)}
+  nav.tabs{
+    position:sticky; top:0; z-index:20; display:flex; gap:8px; flex-wrap:wrap;
+    padding:10px 6vw; background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line); box-shadow:0 4px 14px rgba(20,40,80,.04);
+  }
+  nav.tabs a{
+    padding:8px 14px; border-radius:999px; font-size:13.5px; color:var(--ink-2);
+    border:1px solid transparent;
+  }
+  nav.tabs a:hover{background:var(--blue-soft); color:var(--blue)}
+  nav.tabs a.active{background:var(--blue); color:#fff; box-shadow:0 4px 12px rgba(31,78,121,.28)}
+  main{max-width:1360px; margin:0 auto; padding:30px 4vw 80px}
+  section.fig{margin:0 0 46px; padding:26px 28px 30px; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow); scroll-margin-top:74px}
+  .fig-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; padding-bottom:12px; border-bottom:1px dashed var(--line); margin-bottom:20px}
+  .fig-head h2{margin:0; font-size:21px; color:var(--blue)}
+  .fig-head .tag{font-size:12px; padding:3px 9px; border-radius:999px; background:var(--blue-soft); color:var(--blue)}
+  .fig-head .src{font-size:12.5px; color:var(--muted)}
+  .layer-title{display:flex; align-items:center; gap:10px; margin:18px 0 10px; font-size:13px; color:var(--muted); letter-spacing:.5px}
+  .layer-title::before{content:""; width:4px; height:16px; border-radius:2px; background:var(--blue-2)}
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+  /* 图1 的页面/模块卡片固定 4 列，7 项排成 4+3，避免末行孤卡 */
+  #fig1 .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:1100px){ #fig1 .grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  @media (max-width:760px){ #fig1 .grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .card{background:#fbfdff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; position:relative}
+  .card h4{margin:0 0 4px; font-size:14px; color:var(--ink)}
+  .card p{margin:0; font-size:12.5px; color:var(--ink-2)}
+  .card .path{display:inline-block; margin-top:6px; font-size:11.5px; color:var(--blue-2); background:var(--blue-soft); padding:2px 7px; border-radius:6px; font-family:Consolas,"JetBrains Mono",monospace}
+  .card.accent{border-color:#bfd8f2; background:linear-gradient(180deg,#f2f8ff,#fbfdff)}
+  .card.green{border-color:#c9ecd6; background:linear-gradient(180deg,#f2fbf5,#fff)}
+  .card.amber{border-color:#f3ddb5; background:linear-gradient(180deg,#fffaf0,#fff)}
+  .card.purple{border-color:#ddd2f5; background:linear-gradient(180deg,#f8f5ff,#fff)}
+  .card.role{display:flex; align-items:center; gap:12px}
+  .avatar{width:38px; height:38px; border-radius:50%; display:grid; place-items:center; font-size:14px; font-weight:700; color:#fff; flex:none}
+  .avatar.op{background:linear-gradient(135deg,#2e74b5,#173b63)}
+  .avatar.rv{background:linear-gradient(135deg,#b26a00,#7a4a00)}
+  .arrow-down{display:grid; place-items:center; margin:8px 0; color:#9db3ca; font-size:18px}
+  .arrow-down span{background:var(--card); padding:0 10px; font-size:12px; color:var(--muted); border:1px solid var(--line); border-radius:999px; transform:translateY(-2px)}
+  .flow-line{display:flex; align-items:stretch; gap:10px; flex-wrap:wrap}
+  .flow-line .step{flex:1 1 180px; min-width:160px}
+  .flow-line .step + .flow-line .step{border-left:0}
+  .harrow{display:flex; align-items:center; color:#9db3ca; font-size:20px; padding:0 2px}
+  .badge{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.3px}
+  .b-blue{background:var(--blue-soft); color:var(--blue)}
+  .b-amber{background:var(--amber-soft); color:var(--amber)}
+  .b-green{background:var(--green-soft); color:var(--green)}
+  .b-red{background:var(--red-soft); color:var(--red)}
+  .b-purple{background:var(--purple-soft); color:var(--purple)}
+  .mono{font-family:Consolas,"JetBrains Mono",monospace; font-size:12px}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:18px; padding-top:14px; border-top:1px dashed var(--line); font-size:12.5px; color:var(--muted)}
+  .legend b{color:var(--ink-2)}
+  .strip{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+  .strip .chip{font-size:12px; padding:5px 10px; border-radius:8px; background:var(--blue-soft); color:var(--blue); border:1px solid #cfe2f7}
+  .strip .chip.done{background:var(--green-soft); border-color:#cdebd8; color:var(--green)}
+  .note{font-size:12.5px; color:var(--muted); margin-top:10px}
+  .callout{margin-top:16px; padding:12px 14px; border-radius:10px; background:#f7fbff; border:1px solid #d8e9fb; font-size:13px; color:var(--ink-2)}
+  .callout b{color:var(--blue)}
+  .stack{display:flex; flex-direction:column; gap:10px}
+  .box{border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:#fbfdff}
+  .box .label{font-size:12px; color:var(--muted); margin-bottom:6px}
+  .inner-grid{display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-top:8px}
+  .inner-grid .mini{border:1px solid var(--line); background:#fff; border-radius:9px; padding:8px 10px; font-size:12px}
+  .inner-grid .mini b{font-size:12.5px}
+  .db-grid{display:grid; gap:6px; grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+  .db-grid .t{font-size:11.5px; padding:5px 8px; border-radius:6px; background:#f2f6fb; border:1px solid var(--line); font-family:Consolas,monospace; color:#2b4a67}
+  .id-chain{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .id-card{flex:1 1 150px; min-width:150px; border-radius:12px; padding:11px 12px; border:1px solid var(--line); background:#fbfdff; position:relative}
+  .id-card .idn{font-size:11px; color:var(--muted)}
+  .id-card h4{margin:2px 0 4px; font-size:13.5px}
+  .id-card p{margin:0; font-size:11.8px; color:var(--ink-2)}
+  .id-card.hl{border-color:#bfd8f2; background:linear-gradient(180deg,#f2f8ff,#fff); box-shadow:0 0 0 3px rgba(46,116,181,.08)}
+  .chain-arrow{color:#9db3ca; font-size:18px}
+  .two-col{display:grid; gap:14px; grid-template-columns:1.15fr .85fr}
+  @media (max-width:900px){ .two-col{grid-template-columns:1fr} }
+  table.map{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px}
+  table.map th,table.map td{border:1px solid var(--line); padding:7px 9px; text-align:left; vertical-align:top}
+  table.map th{background:#f2f7fd; color:var(--blue); font-weight:600}
+  table.map tr:nth-child(even) td{background:#fafcff}
+  footer{max-width:1360px; margin:0 auto; padding:0 4vw 40px; color:var(--muted); font-size:12.5px}
+  footer .foot-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px}
+  .kbd{font-family:Consolas,monospace; font-size:11.5px; border:1px solid #cfd9e5; border-bottom-width:2px; border-radius:5px; padding:1px 6px; background:#fff}
+  @media print{
+    body{background:#fff}
+    header.top{color:#12263f; background:#fff; border-bottom:2px solid var(--blue); padding:18px 12mm}
+    header.top .sub,.meta-row .pill{color:#3b4a5c; border-color:#cfd9e5; background:#fff}
+    nav.tabs{display:none}
+    main{padding:0 8mm}
+    section.fig{box-shadow:none; border:none; page-break-before:always; padding:10mm 0}
+    section.fig:first-of-type{page-break-before:auto}
+    .card,.box,.id-card{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">印制参数校验与成本测算 AI 系统</div>
+  <div class="sub">三张图 · HTML 演示版（对应任务书 [原文 L79]：系统功能图 / 技术调用图 / 数据处理与工具执行图，图示应与实际程序一致）</div>
+  <div class="meta-row">
+    <span class="pill">● 业务方向：印制参数校验与成本测算</span>
+    <span class="pill">● 技术栈：FastAPI + SQLite + Jinja2 + DeepSeek（OpenAI 兼容）</span>
+    <span class="pill">● 版本：v1.1 · 2026-11-01</span>
+    <span class="pill">● 单进程 :8000 · 单 worker · 10 表 · 24 接口 · 4 工具 3 类</span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <a href="#fig1" class="active">图1 系统功能图</a>
+  <a href="#fig2">图2 技术调用图</a>
+  <a href="#fig3">图3 数据处理与工具执行图</a>
+  <a href="#check">图-程序对照与限额</a>
+</nav>
+
+<main>
+
+  <!-- ================= 图1 系统功能图 ================= -->
+  <section class="fig" id="fig1">
+    <div class="fig-head">
+      <h2>图1 系统功能图</h2>
+      <span class="tag">角色 → 页面 → 模块 → 数据/接口</span>
+      <span class="src">依据 [原文 L23] 七环节、[表2] 六项必做；图示节点均可在程序中点开</span>
+    </div>
+
+    <div class="layer-title">① 角色与权限（后端逐接口校验）</div>
+    <div class="row">
+      <div class="card role" style="flex:1 1 300px">
+        <div class="avatar op">业</div>
+        <div>
+          <h4>业务操作人员 · operator</h4>
+          <p>创建/编辑本人任务、关联资料、运行 AI、保存结果与版本、提交审核</p>
+          <span class="path">role_code = operator</span>
+        </div>
+      </div>
+      <div class="card role" style="flex:1 1 300px">
+        <div class="avatar rv">审</div>
+        <div>
+          <h4>审核 / 确认人员 · reviewer</h4>
+          <p>查看待审/已审任务，通过或退回；<b>不可</b>创建任务、<b>不可</b>运行 AI</p>
+          <span class="path">role_code = reviewer</span>
+        </div>
+      </div>
+    </div>
+    <div class="arrow-down"><span>登录后按角色渲染菜单；越权一律后端 403 / 404</span>▼</div>
+
+    <div class="layer-title">② 页面（Jinja2 服务端渲染，共 7 个页面入口）</div>
+    <div class="grid">
+      <div class="card"><h4>登录页</h4><p>账号登录、演示账号</p><span class="path">/login</span></div>
+      <div class="card"><h4>任务列表</h4><p>状态筛选 / 关键词 / AI 状态</p><span class="path">/tasks</span></div>
+      <div class="card"><h4>新建任务</h4><p>目标 + 关键参数（必填校验）</p><span class="path">/tasks/new</span></div>
+      <div class="card accent"><h4>任务详情</h4><p>AI 运行 · 结果依据 · 执行记录 · 版本 · 审核</p><span class="path">/tasks/{id}</span></div>
+      <div class="card"><h4>资料库</h4><p>纸张/工艺/装订/费率 + 启停</p><span class="path">/materials</span></div>
+      <div class="card"><h4>规则库</h4><p>校验规则与来源</p><span class="path">/rules</span></div>
+      <div class="card green"><h4>系统信息</h4><p>真实模式自证 + 限额 + 账号</p><span class="path">/system</span></div>
+    </div>
+    <div class="arrow-down"><span>页面只做展示/交互，写操作全部走后端接口</span>▼</div>
+
+    <div class="layer-title">③ 功能模块（表2 六项必做 + 历史查询）</div>
+    <div class="grid">
+      <div class="card"><h4>F1 认证与权限</h4><p>登录、签名 Cookie、角色/对象级校验</p></div>
+      <div class="card"><h4>F2 业务任务管理</h4><p>目标/参数、保存/修改/列表查询、必填校验</p></div>
+      <div class="card"><h4>F3 资料与数据管理</h4><p>报价/规则/书目，ID·来源·版本·关联、启停</p></div>
+      <div class="card accent"><h4>F4 AI 测算（Agent）</h4><p>模型选工具与参数 → 后端校验执行 → 连续调用</p></div>
+      <div class="card"><h4>F5 执行记录</h4><p>工具名/参数/摘要/来源 ID/状态/错误/任务 ID</p></div>
+      <div class="card"><h4>F6 人工确认与版本</h4><p>修改/提交/退回/通过，≥2 版本可查、版本冻结</p></div>
+      <div class="card"><h4>F7 历史查询与限额</h4><p>按 task_id 查全链路、系统信息、真实/模拟标识</p></div>
+    </div>
+    <div class="arrow-down"><span>模块落库到 10 张表，对外暴露 24 个 REST 接口</span>▼</div>
+
+    <div class="two-col">
+      <div class="box">
+        <div class="label">数据层：10 张表（SQLite，单文件 data/app.db）</div>
+        <div class="db-grid">
+          <span class="t">users</span><span class="t">business_tasks</span><span class="t">materials</span>
+          <span class="t">task_materials</span><span class="t">rules</span><span class="t">ai_tasks</span>
+          <span class="t">tool_call_records</span><span class="t">ai_results</span><span class="t">result_versions</span>
+          <span class="t">review_records</span>
+        </div>
+        <div class="note">materials 保留 material_no / source / version_no / enabled；task_materials 负责"任务 ↔ 资料"关联。</div>
+      </div>
+      <div class="box">
+        <div class="label">接口层：24 个 REST（统一 /api）</div>
+        <div class="inner-grid">
+          <div class="mini"><b>认证 2</b><br>/auth/login、/auth/me</div>
+          <div class="mini"><b>任务 9</b><br>任务 CRUD、关联资料、结果、版本、提交、审核</div>
+          <div class="mini"><b>AI 5</b><br>发起/状态/记录/结果/重试</div>
+          <div class="mini"><b>资料 4</b><br>列表/新增/详情/启停</div>
+          <div class="mini"><b>规则 3</b><br>新增/列表/详情</div>
+          <div class="mini"><b>系统 1</b><br>/system/meta</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-title">④ 核心业务流程（7 环节，[原文 L23]）</div>
+    <div class="strip">
+      <span class="chip">① 创建任务</span><span class="chip">② 填写需求 / 导入数据</span><span class="chip">③ 调用工具处理</span>
+      <span class="chip">④ 查看结果和依据</span><span class="chip">⑤ 人工修改或确认</span><span class="chip">⑥ 审核</span><span class="chip">⑦ 查询历史记录</span>
+    </div>
+
+    <div class="legend">
+      <span><b>对应程序：</b>app/templates/*.html、app/main.py 页面路由</span>
+      <span><b>对应接口：</b>app/api/*.py（23+1 个路由）</span>
+      <span><b>对应表：</b>app/models.py（10 张表）</span>
+    </div>
+  </section>
+
+  <!-- ================= 图2 技术调用图 ================= -->
+  <section class="fig" id="fig2">
+    <div class="fig-head">
+      <h2>图2 技术调用图</h2>
+      <span class="tag">浏览器 → 单体后端 → 模型 → 工具 → 数据库</span>
+      <span class="src">依据 [原文 L36-37] 单体后端/普通数据库/模型接口；[L40-49] 工具调用；图示与 app/ 目录一一对应</span>
+    </div>
+
+    <div class="stack">
+      <div class="box" style="border-color:#bfd8f2; background:linear-gradient(180deg,#f2f8ff,#fff)">
+        <div class="label">① 客户端（浏览器）</div>
+        <div class="inner-grid">
+          <div class="mini"><b>Jinja2 服务端渲染页面</b><br>7 个页面；CSS/JS 全本地，无 CDN、无构建</div>
+          <div class="mini"><b>原生 JS 交互</b><br>AI 状态 2s 轮询、120s 超时提示、表单校验、依据弹层</div>
+          <div class="mini"><b>身份凭证</b><br>HttpOnly 签名 Cookie（HMAC-SHA256，12h）</div>
+        </div>
+      </div>
+      <div class="arrow-down"><span>HTTP/JSON（fetch，same-origin）</span>▼</div>
+
+      <div class="box" style="border-color:#bfd8f2">
+        <div class="label">② FastAPI 单进程（uvicorn :8000，--workers 1，进程内线程执行 AI，无队列/无微服务）</div>
+        <div class="inner-grid">
+          <div class="mini"><b>页面路由 + 静态资源</b><br>app/main.py / app/templates / app/static</div>
+          <div class="mini"><b>API 层（24 接口）</b><br>app/api/{auth,tasks,materials,rules,results,ai,system}.py</div>
+          <div class="mini"><b>服务层</b><br>task_service / version_service / basis_service（状态机、版本冻结、依据校验）</div>
+          <div class="mini" style="border-color:#cfe2f7"><b>Agent 编排</b><br>app/agent/orchestrator.py：循环 + 完成判定 + 重复熔断 + 终态兜底 + 故障注入</div>
+          <div class="mini"><b>模型适配</b><br>app/agent/llm.py：real（OpenAI 兼容）/ mock 双模</div>
+          <div class="mini"><b>工具层（4 工具 / 3 类）</b><br>search_quotes、get_rules（retrieval）；validate_spec（validation）；calculate_cost（calculation）</div>
+          <div class="mini"><b>证据与日志</b><br>tool_call_records + ai_results + logs/app.log（trace_id、不含 key）</div>
+        </div>
+      </div>
+
+      <div class="flow-line">
+        <div class="step box" style="border-color:#f3ddb5; background:linear-gradient(180deg,#fffaf0,#fff)">
+          <div class="label">③ 模型服务（real）</div>
+          <div class="mini"><b>DeepSeek API（OpenAI 兼容）</b><br>HTTPS POST /chat/completions<br>tools=4 个函数 · tool_choice=auto<br>模型：deepseek-flash · 30s 超时</div>
+        </div>
+        <div class="harrow">→</div>
+        <div class="step box" style="border-color:#ddd2f5; background:linear-gradient(180deg,#f8f5ff,#fff)">
+          <div class="label">④ 工具执行（后端真实执行）</div>
+          <div class="mini"><b>后端校验参数 → 执行 → 回填</b><br>每个 tool_call 必回 role=tool + tool_call_id；<br>重复同参熔断；超时/异常记错误码</div>
+        </div>
+        <div class="harrow">→</div>
+        <div class="step box" style="border-color:#c9ecd6; background:linear-gradient(180deg,#f2fbf5,#fff)">
+          <div class="label">⑤ 数据层</div>
+          <div class="mini"><b>SQLite WAL · data/app.db</b><br>10 张表；单 worker + busy_timeout=5000 + 短事务；<br>seed_demo.py 可重复初始化</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <b>一次 AI 测算的真实调用链：</b>
+        POST /api/business-tasks/{id}/ai-tasks（202）→ 后台线程置 RUNNING → 模型选择工具（检索报价/规则 → 校验参数 → 计算成本）
+        → 后端校验并执行工具、逐条落 tool_call_records → 模型输出最终 JSON → 后端做依据校验并写 ai_results → SUCCEEDED / FAILED。
+        前端 2s 轮询 /api/ai-tasks/{id}，页面实时展示状态、计数与执行记录。
+      </div>
+
+      <div class="box">
+        <div class="label">限额设置（[原文 L49]；页面页脚与系统信息页常驻展示）</div>
+        <div class="inner-grid">
+          <div class="mini"><b>工具调用 ≤ 10 次</b><br>MAX_TOOL_CALLS</div>
+          <div class="mini"><b>模型轮次 ≤ 8 轮</b><br>MAX_LLM_ROUNDS</div>
+          <div class="mini"><b>模型超时 30s</b><br>LLM_TIMEOUT_S</div>
+          <div class="mini"><b>工具超时 3000ms</b><br>TOOL_TIMEOUT_MS</div>
+          <div class="mini"><b>单次运行 ≤ 120s</b><br>AI_RUN_TIMEOUT_S</div>
+          <div class="mini"><b>单任务运行 ≤ 10 次</b><br>MAX_AI_RUNS</div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><b>对应程序：</b>app/main.py、app/api/*.py、app/services/*.py、app/agent/*.py、app/db.py</span>
+        <span><b>对应接口：</b>POST /api/business-tasks/{id}/ai-tasks 等 5 个 AI 接口</span>
+        <span><b>对应表：</b>ai_tasks、tool_call_records、ai_results、result_versions</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 图3 数据处理与工具执行图 ================= -->
+  <section class="fig" id="fig3">
+    <div class="fig-head">
+      <h2>图3 数据处理与工具执行图</h2>
+      <span class="tag">同一 business_task_id 贯穿数据链路</span>
+      <span class="src">依据 [原文 L31][L49]：工具记录、来源 ID、结果保存与审核走业务接口；[表2] 资料保留 ID/来源/版本/关联</span>
+    </div>
+
+    <div class="layer-title">① 输入：任务参数 + 关联资料/规则（均有 ID 与来源）</div>
+    <div class="id-chain">
+      <div class="id-card hl"><div class="idn">输入 A</div><h4>business_task</h4><p>params_json（开本/印张/印数/纸张/装订/色数/工艺）+ 状态 + revision</p></div>
+      <div class="chain-arrow">＋</div>
+      <div class="id-card"><div class="idn">输入 B</div><h4>materials</h4><p>material_no / type / source / version_no / enabled；纸张/工艺/装订/费率</p></div>
+      <div class="chain-arrow">＋</div>
+      <div class="id-card"><div class="idn">输入 C</div><h4>rules</h4><p>rule_code / rule_type / severity / source；校验口径</p></div>
+    </div>
+
+    <div class="arrow-down"><span>发起 AI 运行（快照输入参数与关联资料）</span>▼</div>
+
+    <div class="layer-title">② 执行记录：模型选工具，后端校验、执行、落库（同一任务 ID）</div>
+    <div class="id-chain">
+      <div class="id-card hl"><div class="idn">步骤 1</div><h4>ai_tasks</h4><p>id / status（PENDING→RUNNING→SUCCEEDED|FAILED）/ model_mode / counters / error_code</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card hl"><div class="idn">步骤 2</div><h4>tool_call_records</h4><p>seq / tool_name / tool_type / args_json / result_summary / <b>source_ids_json</b> / status / error_code / latency</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card"><div class="idn">步骤 3</div><h4>ai_results</h4><p>content_md / structured_json / <b>basis_refs</b> / basis_ok / uncertain_items / missing_data</p></div>
+    </div>
+
+    <div class="callout">
+      <b>依据三跳（现场可点击验证）：</b>
+      结果条目 → basis_refs（PAPER-001 / RATE-001 / RULE-…）→ tool_call_records.source_ids（本次工具实际返回）
+      → 资料/规则详情（material_no / rule_code）。<br>
+      <b>数据不足：</b>工具返回 DATA_NOT_FOUND 时，结果明确列 missing_data，total / per_copy 必须为 null（不虚构）。
+      <b>失败：</b>工具异常/超时落 FAILED + 错误码，可重试，且不覆盖人工版本。
+    </div>
+
+    <div class="arrow-down"><span>人工确认：采用 AI 结果 / 人工修改 → 生成版本（只增不改）</span>▼</div>
+
+    <div class="layer-title">③ 人工确认与版本（至少 2 个可查版本）</div>
+    <div class="id-chain">
+      <div class="id-card"><div class="idn">版本 1</div><h4>result_versions (source=AI)</h4><p>采用 AI 结果生成 v1；AI 重跑只写 ai_results、不自动提版</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card"><div class="idn">版本 2</div><h4>result_versions (source=MANUAL)</h4><p>人工复核修改后保存 v2；版本号唯一约束、已提交版本冻结</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card"><div class="idn">提交</div><h4>business_tasks.status</h4><p>PENDING → PENDING_REVIEW；提交时重跑依据校验（409 BASIS_MISMATCH）</p></div>
+    </div>
+
+    <div class="arrow-down"><span>审核人员操作（reviewer）</span>▼</div>
+
+    <div class="id-chain">
+      <div class="id-card"><div class="idn">审核记录</div><h4>review_records</h4><p>action（APPROVE/REJECT）/ opinion / reviewer / 时间；退回必须写意见</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card hl"><div class="idn">终态</div><h4>business_tasks.status</h4><p>COMPLETED（通过）/ REJECTED（退回，可修改后重新提交）</p></div>
+      <div class="chain-arrow">→</div>
+      <div class="id-card"><div class="idn">查询</div><h4>历史查询</h4><p>按 task_id 可查：任务、AI 运行、工具调用、结果、全部版本、审核记录</p></div>
+    </div>
+
+    <div class="layer-title">④ 状态流转（与程序一致）</div>
+    <div class="inner-grid">
+      <div class="mini"><b>业务任务：</b><br><span class="badge b-blue">待处理 PENDING</span> → <span class="badge b-amber">待审核 PENDING_REVIEW</span> → <span class="badge b-green">完成 COMPLETED</span><br><span class="badge b-red">退回 REJECTED</span> → 修改后重新提交</div>
+      <div class="mini"><b>AI 任务：</b><br><span class="badge b-blue">待执行 PENDING</span> → <span class="badge b-amber">运行中 RUNNING</span> → <span class="badge b-green">完成 SUCCEEDED</span> / <span class="badge b-red">失败 FAILED</span>（可重试，新 attempt）</div>
+      <div class="mini"><b>依据校验：</b><br>L1 允许集合（本次工具 source_ids ∪ 关联资料 ∪ 规则 ∪ 参数）软标记；L2 存在性（停用/删除→"依据已变更"）；提交时 409</div>
+    </div>
+
+    <div class="legend">
+      <span><b>对应程序：</b>app/agent/orchestrator.py（记录/依据）、app/api/ai.py、app/services/{task,version,basis}_service.py</span>
+      <span><b>对应表：</b>ai_tasks、tool_call_records、ai_results、result_versions、review_records、business_tasks</span>
+    </div>
+  </section>
+
+  <!-- ================= 图-程序对照 ================= -->
+  <section class="fig" id="check">
+    <div class="fig-head">
+      <h2>图-程序对照与限额（一致性自检）</h2>
+      <span class="tag">教师抽查时逐行可查</span>
+      <span class="src">对应 [原文 L79]"图示应与实际程序一致"</span>
+    </div>
+    <table class="map">
+      <thead><tr><th style="width:26%">图节点 / 元素</th><th style="width:34%">程序对应物</th><th>核查方式</th></tr></thead>
+      <tbody>
+        <tr><td>登录 / 角色权限</td><td><span class="mono">app/api/auth.py、app/auth.py、templates/login.html</span></td><td>operator / reviewer 两账号；reviewer 运行 AI → 403</td></tr>
+        <tr><td>任务列表 / 新建 / 详情</td><td><span class="mono">app/main.py（页面路由）、app/api/tasks.py、templates/*.html</span></td><td>现场建任务并打开详情</td></tr>
+        <tr><td>AI 运行区 + Agent</td><td><span class="mono">app/agent/orchestrator.py、llm.py、prompts.py、app/api/ai.py</span></td><td>运行后看执行记录（≥2 类工具、同一 task_id）</td></tr>
+        <tr><td>4 个工具 / 3 类</td><td><span class="mono">app/agent/tools.py</span></td><td>search_quotes / get_rules / validate_spec / calculate_cost</td></tr>
+        <tr><td>执行记录表</td><td><span class="mono">tool_call_records、GET /api/ai-tasks/{id}/tool-calls</span></td><td>工具名/参数/摘要/来源 ID/状态/错误/耗时</td></tr>
+        <tr><td>结果与依据三跳</td><td><span class="mono">ai_results.basis_refs → tool_call_records.source_ids → materials/rules</span></td><td>结果页点击依据可跳资料/规则详情</td></tr>
+        <tr><td>版本与审核</td><td><span class="mono">result_versions、review_records、POST /results|/submit|/review</span></td><td>v1(AI)+v2(MANUAL)；退回后原版本仍可查</td></tr>
+        <tr><td>资料启停（依据失效）</td><td><span class="mono">PATCH /api/materials/{id}、basis_service.check_submit_basis</span></td><td>停用被引用资料后提交 → 409 BASIS_MISMATCH</td></tr>
+        <tr><td>真实模式自证</td><td><span class="mono">GET /api/system/meta（llm_mode/model/key_configured/limits）</span></td><td>系统信息页展示 real + 限额；运行记录含 model_mode</td></tr>
+      </tbody>
+    </table>
+    <div class="legend">
+      <span><b>打印说明：</b>浏览器 Ctrl+P 可导出 PDF（每张图自动分页）。</span>
+      <span><b>在线查看：</b>启动系统后访问 <span class="mono">http://127.0.0.1:8000/diagrams</span></span>
+      <span><b>文件位置：</b><span class="mono">docs/三张图演示.html</span>（离线单文件，无外部依赖）</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-card">
+    <b>说明：</b>本页为《印制参数校验与成本测算 AI 系统》三张图的 HTML 演示版，与 <span class="mono">docs/02_系统功能图.md、03_技术调用图.md、04_数据处理与工具执行图.md</span> 的 mermaid 源图一致；
+    页面/接口/表/限额口径与程序实际实现一致（2026-11-01 真实模式实测：9 次工具调用 / 3 类工具 / 14638.00 元）。
+    <br>快捷键：<span class="kbd">1</span> 图1　<span class="kbd">2</span> 图2　<span class="kbd">3</span> 图3　<span class="kbd">4</span> 对照表
+  </div>
+</footer>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('#tabs a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function activate(){
+    var idx = 0;
+    var y = window.scrollY + 120;
+    sections.forEach(function(s, i){ if (s && s.offsetTop <= y) idx = i; });
+    links.forEach(function(a, i){ a.classList.toggle('active', i === idx); });
+  }
+  window.addEventListener('scroll', activate, {passive:true});
+  activate();
+  document.addEventListener('keydown', function(e){
+    var map = {'1':0,'2':1,'3':2,'4':3};
+    if (map[e.key] !== undefined) {
+      e.preventDefault();
+      links[map[e.key]].click();
+    }
+  });
+})();
+</script>
+</body>
+</html>

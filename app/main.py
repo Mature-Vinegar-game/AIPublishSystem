@@ -1066,4 +1066,17 @@ def system_page(request: Request, db: Session = Depends(get_db)):
         return HTMLResponse(_system_fallback_html(meta))
 
 
+DIAGRAMS_FILE = BASE_DIR / "docs" / "三张图演示.html"
+
+
+@app.get("/diagrams", include_in_schema=False)
+def diagrams_page():
+    """三张图 HTML 演示版（离线单文件；教师现场投屏用）。"""
+    try:
+        content = DIAGRAMS_FILE.read_text(encoding="utf-8")
+    except OSError:
+        raise HTTPException(status_code=404, detail="三张图演示文件不存在：docs/三张图演示.html")
+    return HTMLResponse(content)
+
+
 __all__ = ["app"]

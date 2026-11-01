@@ -70,6 +70,7 @@
         <span>总时长 <b>{{ lim.ai_run_timeout_s|default(120) }}</b>s</span>
       </div>
       <div class="footer-mode">
+        <a href="/diagrams" target="_blank" rel="noopener" style="color:#2e74b5; margin-right:12px" title="系统功能图 / 技术调用图 / 数据处理与工具执行图（HTML 演示）">三张图演示</a>
         {% if app_version %}<span class="footer-version">v{{ app_version }}</span>{% endif %}
         <span>LLM_MODE：</span>
         {% if mode == 'real' %}
