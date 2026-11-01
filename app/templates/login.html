@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}登录 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set err = error|default('') or (request.query_params.get('error', '') if request else '') %}
+{% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
+
+<section class="login-wrap">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-logo" aria-hidden="true">印</div>
+      <h1 class="login-title">印制参数校验与成本测算 AI 系统</h1>
+      <p class="login-sub">Print Cost Validation &amp; AI Estimation · 演示环境</p>
+    </div>
+
+    {% if err %}
+    <div class="notice notice-danger" role="alert">{{ err }}</div>
+    {% endif %}
+    {% if msg %}
+    <div class="notice notice-success" role="status">{{ msg }}</div>
+    {% endif %}
+    {% if user %}
+    <div class="notice notice-info">
+      当前已登录：{{ user.display_name|default(user.username|default('用户')) }}。
+      <a href="/tasks">进入任务列表</a>
+    </div>
+    {% endif %}
+
+    <form class="login-form" method="post" action="/login" autocomplete="on">
+      <div class="field">
+        <label for="username">用户名 <span class="req">*</span></label>
+        <input id="username" name="username" type="text" required autofocus
+               autocomplete="username" placeholder="请输入用户名" value="{{ username|default('') }}">
+      </div>
+      <div class="field">
+        <label for="password">密码 <span class="req">*</span></label>
+        <input id="password" name="password" type="password" required
+               autocomplete="current-password" placeholder="请输入密码">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">登 录</button>
+    </form>
+
+    <div class="demo-accounts">
+      <div class="demo-head">
+        <span class="demo-title">演示账号</span>
+        <span class="hint">点击账号可自动填入密码</span>
+      </div>
+      <button type="button" class="demo-account" data-demo-user="operator" data-demo-password="123456">
+        <span class="demo-avatar">张</span>
+        <span class="demo-info">
+          <span class="demo-name">张伟 <code>operator</code> / <code>123456</code></span>
+          <span class="demo-desc">业务操作员：新建任务、编辑参数、运行 AI 测算、保存版本、提交审核</span>
+        </span>
+      </button>
+      <button type="button" class="demo-account" data-demo-user="reviewer" data-demo-password="123456">
+        <span class="demo-avatar demo-avatar-alt">李</span>
+        <span class="demo-info">
+          <span class="demo-name">李静 <code>reviewer</code> / <code>123456</code></span>
+          <span class="demo-desc">审核员：查看待审任务、核对测算依据、通过或退回</span>
+        </span>
+      </button>
+    </div>
+
+    <p class="login-foot">
+      所有写操作在后端按“角色 + 对象归属 + 任务状态”二次校验；页面仅按角色显示入口。
+    </p>
+  </div>
+</section>
+{% endblock %}

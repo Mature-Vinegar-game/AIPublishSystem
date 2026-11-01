@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}任务列表 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set tlist = tasks or [] %}
+{% set sf = status_filter|default('ALL') or 'ALL' %}
+{% set kw = keyword|default('') %}
+{% set cur_page = page|default(1) %}
+{% set total_count = total|default(tlist|length) %}
+{% set page_size = 20 %}
+{% set is_operator = user and user.role_code == 'operator' %}
+{% set business_status = {
+  'PENDING': ('待处理', 'badge-gray'),
+  'PENDING_REVIEW': ('待审核', 'badge-blue'),
+  'REJECTED': ('已退回', 'badge-red'),
+  'COMPLETED': ('已完成', 'badge-green')
+} %}
+{% set ai_status = {
+  'PENDING': ('待执行', 'badge-gray'),
+  'RUNNING': ('运行中', 'badge-blue'),
+  'SUCCEEDED': ('完成', 'badge-green'),
+  'FAILED': ('失败', 'badge-red')
+} %}
+{% set filter_labels = {
+  'ALL': '全部状态',
+  'PENDING': '待处理',
+  'PENDING_REVIEW': '待审核',
+  'REJECTED': '已退回',
+  'COMPLETED': '已完成'
+} %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">任务列表</h1>
+    <p class="page-sub">
+      共 <b>{{ total_count }}</b> 条任务{% if sf != 'ALL' %}（筛选：{{ filter_labels.get(sf, sf) }}）{% endif %}{% if kw %}（关键词：{{ kw }}）{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/tasks">刷新</a>
+    {% if is_operator %}
+    <a class="btn btn-primary" href="/tasks/new">＋ 新建任务</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">任务列表</h2>
+    <form class="filter-form" method="get" action="/tasks">
+      <label class="filter-label" for="status-filter">状态</label>
+      <select id="status-filter" name="status" data-auto-submit>
+        {% for value, label in filter_labels.items() %}
+        <option value="{{ value }}"{% if sf == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input class="filter-keyword" type="search" name="keyword" value="{{ kw }}"
+             placeholder="任务编号 / 标题 / 目标" aria-label="关键词搜索">
+      <button class="btn btn-ghost btn-sm" type="submit">筛选</button>
+    </form>
+  </div>
+
+  {% if tlist %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="nowrap">任务编号</th>
+          <th>标题 / 目标</th>
+          <th class="nowrap">状态</th>
+          <th class="nowrap">创建人</th>
+          <th class="nowrap">更新时间</th>
+          <th class="nowrap text-center">版本数</th>
+          <th class="nowrap">AI 状态</th>
+          <th class="nowrap text-right">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tlist %}
+        {% set st = t.status|default('') %}
+        {% set sm = business_status.get(st, ('未知', 'badge-gray')) %}
+        {% set as_ = t.latest_ai_status|default(t.ai_status|default('')) %}
+        {% set am = ai_status.get(as_, ('—', 'badge-gray')) %}
+        <tr>
+          <td class="mono nowrap">
+            {% if t.id %}<a class="table-link" href="/tasks/{{ t.id }}">{{ t.task_no|default('—') }}</a>{% else %}{{ t.task_no|default('—') }}{% endif %}
+          </td>
+          <td>
+            <a class="task-title-link" href="/tasks/{{ t.id|default('') }}">{{ t.title|default('（未命名任务）') }}</a>
+            {% if t.goal %}<div class="cell-sub">{{ t.goal|truncate(64, true, '…') }}</div>{% endif %}
+          </td>
+          <td><span class="badge {{ sm[1] }}">{{ sm[0] }}</span></td>
+          <td class="nowrap">{{ t.created_by_name|default(t.created_by|default('—')) }}</td>
+          <td class="nowrap muted">{{ t.updated_at|default(t.created_at|default('—')) }}</td>
+          <td class="text-center">{{ t.versions_count|default(t.version_count|default(0)) }}</td>
+          <td>
+            {% if as_ %}
+            <span class="badge {{ am[1] }}">{{ am[0] }}</span>
+            {% else %}
+            <span class="muted">未运行</span>
+            {% endif %}
+          </td>
+          <td class="text-right nowrap">
+            <a class="btn btn-ghost btn-sm" href="/tasks/{{ t.id|default('') }}">查看</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">🗂</div>
+    <p class="empty-title">暂无符合条件的任务</p>
+    <p class="muted">{% if is_operator %}点击右上角“新建任务”创建第一条印制成本测算任务。{% else %}当前筛选条件下没有待审核或已审核任务。{% endif %}</p>
+    {% if is_operator %}<a class="btn btn-primary" href="/tasks/new">＋ 新建任务</a>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if total_count > page_size %}
+  <div class="pager">
+    <span class="muted small">第 {{ cur_page }} 页 · 共 {{ total_count }} 条</span>
+    <div class="pager-actions">
+      {% if cur_page > 1 %}
+      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&page={{ cur_page - 1 }}">上一页</a>
+      {% endif %}
+      {% if cur_page * page_size < total_count %}
+      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&page={{ cur_page + 1 }}">下一页</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="hint-bar">
+  <span class="hint-bar-icon">ℹ</span>
+  <span>演示路径：打开任务详情 → 运行 AI 测算 → 查看状态与执行记录 → 核对结果依据 → 保存人工版本 → 提交审核 → 审核通过/退回。</span>
+</div>
+{% endblock %}

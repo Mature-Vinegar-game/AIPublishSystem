@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}新建任务 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set err = error|default('') or (request.query_params.get('error', '') if request else '') %}
+{% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
+{% set f = form_data if form_data is defined and form_data else (form if form is defined and form else (values if values is defined and values else {})) %}
+{% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
+{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装'] %}
+{% set process_base = process_options if process_options is defined and process_options else ['覆膜', 'UV', '烫金'] %}
+{% set process_opts = ['无'] + process_base %}
+{% set paper_opts = paper_types if paper_types is defined and paper_types else ['铜版纸157g', '铜版纸128g', '胶版纸70g', '双胶纸80g', '轻型纸60g', '哑粉纸128g', '白卡纸250g'] %}
+{% set fact = f.format|default('16开') %}
+{% set fbind = f.binding|default('胶装') %}
+{% set fproc = f.process|default('无') or '无' %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">新建印制成本测算任务</h1>
+    <p class="page-sub">填写印制参数，系统将调用规则校验与成本计算工具生成可追溯的测算结果。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/tasks">← 返回任务列表</a>
+  </div>
+</div>
+
+{% if err %}
+<div class="notice notice-danger" role="alert">保存失败：{{ err }}</div>
+{% endif %}
+{% if msg %}
+<div class="notice notice-success" role="status">{{ msg }}</div>
+{% endif %}
+
+<div class="form-layout">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">任务信息与印制参数</h2>
+      <span class="hint"><span class="req">*</span> 为必填项</span>
+    </div>
+
+    <form id="task-create-form" class="js-task-form" method="post" action="/tasks/create">
+      <input type="hidden" name="business_type" value="print_cost">
+
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="title">任务标题 <span class="req">*</span></label>
+          <input id="title" name="title" type="text" required maxlength="100"
+                 value="{{ f.title|default('') }}" placeholder="如：2026 秋季《出版实务》16 开印制成本测算">
+          <div class="field-hint">用于任务列表展示，建议包含书目与版本信息。</div>
+          <div class="field-error" data-error-for="title"></div>
+        </div>
+
+        <div class="field span-2">
+          <label for="goal">测算目标 <span class="req">*</span></label>
+          <textarea id="goal" name="goal" rows="3" required maxlength="500"
+                    placeholder="如：核算 1000 册 16 开图书的纸张、印刷、制版、装订与工艺成本，并核对参数是否合规。">{{ f.goal|default('') }}</textarea>
+          <div class="field-error" data-error-for="goal"></div>
+        </div>
+
+        <div class="field">
+          <label for="book_title">书名</label>
+          <input id="book_title" name="book_title" type="text" maxlength="100"
+                 value="{{ f.book_title|default('') }}" placeholder="如：出版实务（第三版）">
+        </div>
+
+        <div class="field">
+          <label for="format">开本 <span class="req">*</span></label>
+          <select id="format" name="format" required data-validate="format">
+            {% for opt in format_opts %}
+            <option value="{{ opt }}"{% if fact == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+          <div class="field-error" data-error-for="format"></div>
+        </div>
+
+        <div class="field">
+          <label for="print_sheet">印张 <span class="req">*</span></label>
+          <input id="print_sheet" name="print_sheet" type="number" required min="0.5" max="50" step="0.5"
+                 value="{{ f.print_sheet|default('') }}" placeholder="0.5 ~ 50，如 3.5" inputmode="decimal">
+          <div class="field-hint">单个印张含 16 个页码；校验规则要求 &gt;0 且 ≤50。</div>
+          <div class="field-error" data-error-for="print_sheet"></div>
+        </div>
+
+        <div class="field">
+          <label for="qty">印数（册） <span class="req">*</span></label>
+          <input id="qty" name="qty" type="number" required min="500" step="1"
+                 value="{{ f.qty|default(1000) }}" placeholder="≥500，如 1000" inputmode="numeric">
+          <div class="field-hint">校验规则要求 ≥500 且为整数。</div>
+          <div class="field-error" data-error-for="qty"></div>
+        </div>
+
+        <div class="field">
+          <label for="paper_type">纸张 <span class="req">*</span></label>
+          <input id="paper_type" name="paper_type" type="text" required maxlength="50" list="paper-suggestions"
+                 value="{{ f.paper_type|default('') }}" placeholder="如：铜版纸157g">
+          <datalist id="paper-suggestions">
+            {% for paper in paper_opts %}
+            <option value="{{ paper }}"></option>
+            {% endfor %}
+          </datalist>
+          <div class="field-hint">须与资料库中 type=paper 的纸张名称匹配，否则无法取到单价。</div>
+          <div class="field-error" data-error-for="paper_type"></div>
+        </div>
+
+        <div class="field">
+          <label for="binding">装订方式 <span class="req">*</span></label>
+          <select id="binding" name="binding" required data-validate="binding">
+            {% for opt in binding_opts %}
+            <option value="{{ opt }}"{% if fbind == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+          <div class="field-error" data-error-for="binding"></div>
+        </div>
+
+        <div class="field">
+          <label for="color_pages">色数档位</label>
+          <select id="color_pages" name="color_pages">
+            <option value="0"{% if (f.color_pages|default(0))|string == '0' %} selected{% endif %}>0（单色）</option>
+            <option value="1"{% if (f.color_pages|default(0))|string == '1' %} selected{% endif %}>1</option>
+            <option value="2"{% if (f.color_pages|default(0))|string == '2' %} selected{% endif %}>2</option>
+            <option value="3"{% if (f.color_pages|default(0))|string == '3' %} selected{% endif %}>3</option>
+            <option value="4"{% if (f.color_pages|default(0))|string == '4' %} selected{% endif %}>4（四色）</option>
+          </select>
+          <div class="field-hint">0 表示单色印刷；&gt;0 按四色档计算印刷费与制版费。</div>
+        </div>
+
+        <div class="field">
+          <label for="process">表面工艺</label>
+          <select id="process" name="process">
+            {% for opt in process_opts %}
+            <option value="{{ opt }}"{% if fproc == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field span-2">
+          <label for="note">备注</label>
+          <textarea id="note" name="note" rows="2" maxlength="500"
+                    placeholder="如：客户要求 5 天内交片，纸张按 105% 损耗估算。">{{ f.note|default('') }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">创建任务</button>
+        <a class="btn btn-ghost" href="/tasks">取消</a>
+        <span class="hint form-actions-hint">创建后进入任务详情页，可关联资料并运行 AI 测算。</span>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">填写说明</h2>
+    </div>
+    <div class="side-body">
+      <h3 class="side-title">参数校验规则</h3>
+      <ul class="check-list">
+        <li>开本仅支持 <b>16开 / 32开 / 大32开</b></li>
+        <li>印张须 &gt;0 且 ≤50，支持 0.5 步进</li>
+        <li>印数须为 ≥500 的整数</li>
+        <li>纸张名称须能在资料库中匹配到报价</li>
+        <li>装订仅支持 <b>胶装 / 骑马订 / 精装</b></li>
+        <li>色数 0~4，单色/四色两档计价</li>
+      </ul>
+
+      <h3 class="side-title">后续流程</h3>
+      <ol class="step-list">
+        <li>进入任务详情，关联纸张/工艺/装订资料</li>
+        <li>运行 AI 测算，查看工具执行记录与依据</li>
+        <li>保存人工版本，提交审核</li>
+        <li>审核通过后任务完成，历史版本保留</li>
+      </ol>
+
+      <div class="notice notice-info side-notice">
+        缺少纸张或工艺报价？先到 <a href="/materials">资料库</a> 新增；规则阈值可在 <a href="/rules">规则库</a> 查看。
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

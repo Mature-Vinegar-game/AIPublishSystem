@@ -1,0 +1,87 @@
+[
+  {
+    "material_no": "PROC-001",
+    "type": "process",
+    "title": "覆膜",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 180.0,
+      "unit": "元/千册",
+      "note": "封面覆光膜，按千册计价"
+    }
+  },
+  {
+    "material_no": "PROC-002",
+    "type": "process",
+    "title": "UV",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 200.0,
+      "unit": "元/千册",
+      "note": "局部 UV，按千册计价"
+    }
+  },
+  {
+    "material_no": "PROC-003",
+    "type": "process",
+    "title": "烫金",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 260.0,
+      "unit": "元/千册",
+      "note": "封面烫金，按千册计价"
+    }
+  },
+  {
+    "material_no": "BIND-001",
+    "type": "binding",
+    "title": "胶装",
+    "source": "2026 年装订报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 180.0,
+      "unit": "元/千册",
+      "note": "无线胶装，适合 8 印张以上书刊"
+    }
+  },
+  {
+    "material_no": "BIND-002",
+    "type": "binding",
+    "title": "骑马订",
+    "source": "2026 年装订报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 120.0,
+      "unit": "元/千册",
+      "note": "骑马订，适合 8 印张以下薄本"
+    }
+  },
+  {
+    "material_no": "BIND-003",
+    "type": "binding",
+    "title": "精装",
+    "source": "2026 年装订报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 480.0,
+      "unit": "元/千册",
+      "note": "硬壳精装，适合 4 印张以上精装书"
+    }
+  },
+  {
+    "material_no": "RATE-001",
+    "type": "rate",
+    "title": "印刷费率（单色千印张）",
+    "source": "2026 年印刷工价表（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000_sheets_per_color": 22.0,
+      "plate_fee_per_color": 80.0,
+      "unit": "元/千印张·色",
+      "note": "四色按 4 个色档计；制版费 80 元/色（demo 口径）"
+    }
+  }
+]

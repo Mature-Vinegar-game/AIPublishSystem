@@ -1,0 +1,142 @@
+[
+  {
+    "material_no": "PAPER-001",
+    "type": "paper",
+    "title": "胶版纸80g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 265.0,
+      "grammage": 80,
+      "unit": "元/令",
+      "format_fit": ["16开", "32开", "大32开"],
+      "note": "双面胶版印刷常用纸，适用于正文"
+    }
+  },
+  {
+    "material_no": "PAPER-002",
+    "type": "paper",
+    "title": "胶版纸70g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 235.0,
+      "grammage": 70,
+      "unit": "元/令",
+      "format_fit": ["32开", "大32开"],
+      "note": "大印数正文用纸，克重较低"
+    }
+  },
+  {
+    "material_no": "PAPER-003",
+    "type": "paper",
+    "title": "铜版纸157g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 520.0,
+      "grammage": 157,
+      "unit": "元/令",
+      "format_fit": ["16开", "大32开"],
+      "note": "彩色插页/封面常用"
+    }
+  },
+  {
+    "material_no": "PAPER-004",
+    "type": "paper",
+    "title": "铜版纸128g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 430.0,
+      "grammage": 128,
+      "unit": "元/令",
+      "format_fit": ["16开", "32开", "大32开"],
+      "note": "彩色内文与插页"
+    }
+  },
+  {
+    "material_no": "PAPER-005",
+    "type": "paper",
+    "title": "铜版纸200g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 620.0,
+      "grammage": 200,
+      "unit": "元/令",
+      "format_fit": ["16开"],
+      "note": "封面/精装书封，克重较高"
+    }
+  },
+  {
+    "material_no": "PAPER-006",
+    "type": "paper",
+    "title": "轻型纸70g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 300.0,
+      "grammage": 70,
+      "unit": "元/令",
+      "format_fit": ["32开", "大32开", "16开"],
+      "note": "轻型纸，便于携带，适合大众读物"
+    }
+  },
+  {
+    "material_no": "PAPER-007",
+    "type": "paper",
+    "title": "双胶纸100g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 320.0,
+      "grammage": 100,
+      "unit": "元/令",
+      "format_fit": ["16开", "大32开"],
+      "note": "厚实，适合教辅练习册"
+    }
+  },
+  {
+    "material_no": "PAPER-008",
+    "type": "paper",
+    "title": "哑粉纸157g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 540.0,
+      "grammage": 157,
+      "unit": "元/令",
+      "format_fit": ["16开"],
+      "note": "哑光不反光，适合彩色图册"
+    }
+  },
+  {
+    "material_no": "PAPER-009",
+    "type": "paper",
+    "title": "牛皮纸120g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 380.0,
+      "grammage": 120,
+      "unit": "元/令",
+      "format_fit": ["16开", "32开", "大32开"],
+      "note": "包装/封面用纸"
+    }
+  },
+  {
+    "material_no": "PAPER-010",
+    "type": "paper",
+    "title": "书写纸80g",
+    "source": "2026 年秋季教材印制纸张报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_ream": 240.0,
+      "grammage": 80,
+      "unit": "元/令",
+      "format_fit": ["32开", "大32开"],
+      "note": "练习本/作业本用纸"
+    }
+  }
+]

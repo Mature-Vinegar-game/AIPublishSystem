@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}规则库 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set rlist = rules or items or [] %}
+{% set is_operator = user and user.role_code == 'operator' %}
+{% set err = error|default('') or (request.query_params.get('error', '') if request else '') %}
+{% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
+{% set created_flag = request.query_params.get('created', '') if request else '' %}
+{% set f = form if form is defined and form else (values if values is defined and values else {}) %}
+{% set fcontent = f.content|default('') %}
+{% set type_labels = {
+  'spec': ('参数规格', 'badge-blue'),
+  'calc': ('计算口径', 'badge-amber'),
+  'calculation': ('计算口径', 'badge-amber'),
+  'data': ('数据完整', 'badge-purple'),
+  'policy': ('业务策略', 'badge-gray'),
+  'validation': ('校验规则', 'badge-green')
+} %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">规则库</h1>
+    <p class="page-sub">参数校验、计算口径与业务策略规则，共 <b>{{ rlist|length }}</b> 条；AI 校验工具按规则逐条核对任务参数。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/rules">刷新</a>
+  </div>
+</div>
+
+{% if err %}
+<div class="notice notice-danger" role="alert">保存失败：{{ err }}</div>
+{% endif %}
+{% if msg %}
+<div class="notice notice-success" role="status">{{ msg }}</div>
+{% endif %}
+{% if created_flag %}
+<div class="notice notice-success" role="status">规则新增成功。</div>
+{% endif %}
+
+<div class="content-layout">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">规则列表</h2>
+      <div class="header-tools">
+        <input class="table-filter" type="search" data-table-filter="#rules-table"
+               placeholder="筛选编号 / 名称 / 来源" aria-label="筛选规则">
+      </div>
+    </div>
+
+    {% if rlist %}
+    <div class="table-wrap">
+      <table class="data-table" id="rules-table">
+        <thead>
+          <tr>
+            <th class="nowrap">规则编号</th>
+            <th>规则名称</th>
+            <th class="nowrap">类型</th>
+            <th class="nowrap">严重级别</th>
+            <th>来源</th>
+            <th class="nowrap text-center">状态</th>
+            <th class="nowrap">内容</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rlist %}
+          {% set rt = type_labels.get(r.rule_type|default(''), (r.rule_type|default('—'), 'badge-gray')) %}
+          {% set sev = (r.severity|default(''))|string %}
+          {% set sev_cls = 'badge-red' if sev|lower in ['high', 'error', '严重', '高'] else ('badge-amber' if sev|lower in ['medium', 'warning', 'warn', '中'] else 'badge-gray') %}
+          {% set en = r.enabled|default(1) %}
+          <tr>
+            <td class="mono nowrap">{{ r.rule_code|default('—') }}</td>
+            <td><b>{{ r.name|default('—') }}</b>{% if r.business_type %}<div class="cell-sub">{{ r.business_type }}</div>{% endif %}</td>
+            <td><span class="badge {{ rt[1] }}">{{ rt[0] }}</span></td>
+            <td><span class="badge {{ sev_cls }}">{{ r.severity|default('—') }}</span></td>
+            <td class="muted">{{ r.source|default('—') }}</td>
+            <td class="text-center">
+              {% if en|string in ['1', 'true', 'True', 'enabled'] %}
+              <span class="badge badge-green">启用</span>
+              {% else %}
+              <span class="badge badge-gray">停用</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set rj = r.content|default(r.content_json|default({})) %}
+              <details class="json-details">
+                <summary>查看</summary>
+                {% if rj is mapping %}
+                <dl class="kv-list">
+                  {% for key, value in rj.items() %}
+                  <dt>{{ key }}</dt>
+                  <dd>{% if value is string %}{{ value }}{% elif value is boolean %}{{ '是' if value else '否' }}{% elif value is number %}{{ value }}{% elif value is sequence %}{% for item in value %}{{ item }}{% if not loop.last %}、{% endif %}{% endfor %}{% elif value is mapping %}{{ value|tojson }}{% else %}{{ value }}{% endif %}</dd>
+                  {% endfor %}
+                </dl>
+                {% elif rj is string %}
+                <pre class="json-block">{{ rj }}</pre>
+                {% else %}
+                <pre class="json-block">{{ rj|tojson(indent=2) }}</pre>
+                {% endif %}
+              </details>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📏</div>
+      <p class="empty-title">规则库暂无数据</p>
+      <p class="muted">{% if is_operator %}请在右侧新增参数规格与计算口径规则。{% else %}请联系业务操作员补充规则。{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if is_operator %}
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">新增规则</h2>
+    </div>
+    <form id="rule-create-form" class="js-json-form side-body" method="post" action="/rules/create">
+      <div class="field">
+        <label for="rule-code">规则编号 <span class="req">*</span></label>
+        <input id="rule-code" name="rule_code" type="text" required maxlength="50"
+               value="{{ f.rule_code|default('') }}" placeholder="如：RULE-QTY-MIN">
+      </div>
+
+      <div class="field">
+        <label for="rule-name">规则名称 <span class="req">*</span></label>
+        <input id="rule-name" name="name" type="text" required maxlength="100"
+               value="{{ f.name|default('') }}" placeholder="如：印数不得低于 500">
+      </div>
+
+      <div class="field">
+        <label for="rule-business">业务类型 <span class="req">*</span></label>
+        <input id="rule-business" name="business_type" type="text" required maxlength="50"
+               value="{{ f.business_type|default('print_cost') }}" placeholder="print_cost">
+      </div>
+
+      <div class="field">
+        <label for="rule-type">规则类型 <span class="req">*</span></label>
+        <input id="rule-type" name="rule_type" type="text" required list="rule-type-options"
+               value="{{ f.rule_type|default('spec') }}" placeholder="spec">
+        <datalist id="rule-type-options">
+          <option value="spec">spec · 参数规格（validate_spec 使用）</option>
+          <option value="calc">calc · 计算口径</option>
+          <option value="data">data · 数据完整性</option>
+          <option value="policy">policy · 业务策略</option>
+        </datalist>
+        <div class="field-hint">校验工具读取 rule_type=spec 的规则。</div>
+      </div>
+
+      <div class="field">
+        <label for="rule-severity">严重级别</label>
+        <input id="rule-severity" name="severity" type="text" list="rule-severity-options"
+               value="{{ f.severity|default('warning') }}" placeholder="warning">
+        <datalist id="rule-severity-options">
+          <option value="error">error · 阻断</option>
+          <option value="warning">warning · 警告</option>
+          <option value="high">high · 高</option>
+          <option value="medium">medium · 中</option>
+        </datalist>
+      </div>
+
+      <div class="field">
+        <label for="rule-source">来源 <span class="req">*</span></label>
+        <input id="rule-source" name="source" type="text" required maxlength="100"
+               value="{{ f.source|default('') }}" placeholder="如：出版社印制规范（演示）">
+      </div>
+
+      <div class="field">
+        <label for="rule-content">内容 JSON <span class="req">*</span></label>
+        <textarea id="rule-content" name="content" rows="8" required data-json="1"
+                  placeholder='{"field": "qty", "min": 500, "message": "印数不得低于 500 册"}'>{% if fcontent is string %}{{ fcontent }}{% elif fcontent %}{{ fcontent|tojson(indent=2) }}{% endif %}</textarea>
+        <div class="field-error" data-error-for="content"></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-rule-example">填入示例 JSON</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">新增规则</button>
+        <a class="btn btn-ghost" href="/rules">取消</a>
+      </div>
+    </form>
+  </aside>
+  {% else %}
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">只读访问</h2>
+    </div>
+    <div class="side-body">
+      <div class="notice notice-info">审核员可查看规则内容与依据，新增规则需由业务操作员完成。</div>
+      <p class="hint">规则的 rule_code 会出现在 AI 结果的依据列表中，可点击查看详情。</p>
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

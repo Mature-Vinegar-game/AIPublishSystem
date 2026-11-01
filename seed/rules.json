@@ -1,0 +1,237 @@
+[
+  {
+    "rule_code": "RULE-FMT-001",
+    "name": "开本必须在白名单内",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "format",
+      "type": "enum",
+      "allowed": ["16开", "32开", "大32开"],
+      "message": "开本必须为 16开、32开 或 大32开，其他开本需走特殊审批",
+      "description": "开本决定印张与装订方式的匹配关系"
+    }
+  },
+  {
+    "rule_code": "RULE-SHEET-002",
+    "name": "印张上限 50",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "print_sheet",
+      "type": "range",
+      "min": 1,
+      "max": 50,
+      "message": "印张必须大于 0 且不超过 50，超过 50 印张需拆分成多册",
+      "description": "按常规印刷机与装订能力设定"
+    }
+  },
+  {
+    "rule_code": "RULE-SHEET-003",
+    "name": "印张必须为正数",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "print_sheet",
+      "type": "number",
+      "min_exclusive": 0,
+      "integer": true,
+      "message": "印张必须为正整数"
+    }
+  },
+  {
+    "rule_code": "RULE-QTY-004",
+    "name": "印数下限 500 册",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "qty",
+      "type": "range",
+      "min": 500,
+      "message": "印数低于 500 册不进入正常印制流程（起印量 500）",
+      "description": "成本测算公式按千册摊薄，低于 500 册成本失真"
+    }
+  },
+  {
+    "rule_code": "RULE-QTY-005",
+    "name": "印数必须为整数",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "qty",
+      "type": "integer",
+      "message": "印数必须为整数（册）"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-006",
+    "name": "装订方式必须在白名单内",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "enum",
+      "allowed": ["胶装", "骑马订", "精装"],
+      "message": "装订方式必须为 胶装、骑马订 或 精装"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-007",
+    "name": "骑马订与印张匹配",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "dependency",
+      "when": {"binding": "骑马订"},
+      "max_print_sheet": 8,
+      "message": "骑马订最多 8 印张，超过请改胶装",
+      "description": "骑马订页数过多会掉页、影响装订质量"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-008",
+    "name": "精装与印张匹配",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "dependency",
+      "when": {"binding": "精装"},
+      "min_print_sheet": 4,
+      "message": "精装书建议不少于 4 印张，过薄影响成书效果",
+      "description": "精装工序成本较高，薄本建议改用胶装"
+    }
+  },
+  {
+    "rule_code": "RULE-PAPER-009",
+    "name": "纸张必须存在于报价库",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "paper_type",
+      "type": "lookup",
+      "lookup": "materials",
+      "material_type": "paper",
+      "match_field": "title",
+      "message": "纸张类型非空且必须能在资料库（type=paper）中找到对应报价，不得使用未报价纸张"
+    }
+  },
+  {
+    "rule_code": "RULE-PAPER-010",
+    "name": "纸张与开本适配",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "paper_type",
+      "type": "lookup_field",
+      "lookup": "materials",
+      "material_type": "paper",
+      "content_field": "format_fit",
+      "match_param": "format",
+      "message": "所选纸张的 format_fit 应包含任务开本，否则需确认是否有特殊开切",
+      "description": "例如铜版纸200g 仅适配 16开"
+    }
+  },
+  {
+    "rule_code": "RULE-COLOR-011",
+    "name": "色数范围 0-4",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "color_pages",
+      "type": "range",
+      "min": 0,
+      "max": 4,
+      "message": "色数必须在 0-4 之间（0 表示无彩页，四色按 4 个色档计算）"
+    }
+  },
+  {
+    "rule_code": "RULE-PROCESS-012",
+    "name": "工艺必须在白名单内（可空）",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "process",
+      "type": "enum",
+      "allowed": ["", "覆膜", "UV", "烫金"],
+      "message": "工艺可为空，或为 覆膜、UV、烫金 之一"
+    }
+  },
+  {
+    "rule_code": "RULE-REQ-013",
+    "name": "成本测算必填参数",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "type": "required",
+      "fields": ["format", "print_sheet", "qty", "paper_type", "binding", "color_pages"],
+      "message": "开本、印张、印数、纸张、装订、色数均为必填参数"
+    }
+  },
+  {
+    "rule_code": "RULE-PRICE-014",
+    "name": "报价与依据必须来自资料库",
+    "business_type": "print_cost",
+    "rule_type": "data",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "type": "evidence",
+      "must_call_tools": ["search_quotes", "get_rules"],
+      "sources": [
+        "materials(type=paper)",
+        "materials(type=binding)",
+        "materials(type=process)",
+        "materials(type=rate)"
+      ],
+      "message": "单价必须来自资料库当前版本，禁止编造价格；结果需列出 basis_refs"
+    }
+  },
+  {
+    "rule_code": "RULE-COST-015",
+    "name": "成本测算公式口径",
+    "business_type": "print_cost",
+    "rule_type": "calc",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "type": "formula",
+      "items": [
+        {"name": "用纸量(令)", "formula": "ceil(qty × print_sheet ÷ 1000 × 1.05)"},
+        {"name": "纸张费", "formula": "用纸量 × price_per_ream"},
+        {"name": "印刷费", "formula": "qty ÷ 1000 × print_sheet × 千印张价 × 色数档"},
+        {"name": "制版费", "formula": "色数档 × 80 元/色"},
+        {"name": "装订费", "formula": "qty ÷ 1000 × price_per_1000"},
+        {"name": "工艺费", "formula": "qty ÷ 1000 × price_per_1000（无工艺为 0）"}
+      ],
+      "message": "总成本 = 纸张费 + 印刷费 + 制版费 + 装订费 + 工艺费；单册成本 = 总成本 ÷ 印数"
+    }
+  }
+]

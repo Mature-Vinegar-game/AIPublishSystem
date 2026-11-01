@@ -1,0 +1,687 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title|default('任务详情') if task else '任务详情' }} · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set t = task or {} %}
+{% set tstatus = t.status|default('') %}
+{% set task_id = t.id|default('') %}
+{% set revision = t.revision|default(1) %}
+{% set is_operator = user and user.role_code == 'operator' %}
+{% set allow_edit = can_edit if can_edit is defined else (is_operator and tstatus in ['PENDING', 'REJECTED']) %}
+{% set can_run_ai = allow_edit %}
+{% set can_review_here = (can_review|default(false)) and tstatus == 'PENDING_REVIEW' %}
+{% set is_demo = app_env|default('demo') == 'demo' %}
+{% set lim2 = limits|default({}, true) %}
+{% set qerr = request.query_params.get('error', '') if request else '' %}
+{% set qstarted = request.query_params.get('ai_task_id', '') if request else '' %}
+{% set qsubmitted = request.query_params.get('submitted', '') if request else '' %}
+{% set qreviewed = request.query_params.get('reviewed', '') if request else '' %}
+{% set err_text = qerr or (error|default('')) %}
+
+{% set ai = latest_ai or ai_task or (t.latest_ai if t else none) %}
+{% set ai_id = ai.id|default(ai.ai_task_id|default('')) if ai else '' %}
+{% set astatus = ai.status|default('') if ai else '' %}
+{% set counters = ai.counters|default({}) if ai else {} %}
+{% set distinct_value = counters.distinct_types|default(counters.distinct_type_count|default(0)) %}
+{% set model_calls_value = counters.model_calls|default(counters.llm_calls|default(0)) %}
+
+{% set result = ai_result or latest_result or (t.latest_result if t else none) %}
+{% set structured = (result.structured|default({}, true) or {}) if result else {} %}
+{% set line_items = structured.line_items|default([], true) or [] %}
+{% set total = structured.total|default(none) %}
+{% set per_copy = structured.per_copy|default(none) %}
+{% set basis_refs = (result.basis_refs|default([], true) or []) if result else [] %}
+{% set uncertain = (result.uncertain_items|default([], true) or []) if result else [] %}
+{% set struct_uncertain = structured.uncertain|default([], true) or [] %}
+{% set uncertain_all = uncertain or struct_uncertain %}
+{% set missing = (result.missing_data|default([], true) or []) if result else [] %}
+{% set struct_missing = structured.missing|default([], true) or [] %}
+{% set missing_all = missing or struct_missing %}
+{% set basis_ok = result.basis_ok|default(none) if result else none %}
+
+{% set calls = tool_calls or (ai.tool_calls if ai else none) or [] %}
+{% set linked = linked_materials or [] %}
+{% set p = params or t.params or {} %}
+{% set vlist = versions or [] %}
+{% set latest_v = vlist|max(attribute='version_no') if vlist else none %}
+{% set latest_vno = latest_v.version_no|default('') if latest_v else '' %}
+{% set vprefill = (latest_v.content_md|default('')) if latest_v else (result.content_md|default('') if result else '') %}
+{% set rlist = reviews or [] %}
+
+{% set business_status = {
+  'PENDING': ('待处理', 'badge-gray'),
+  'PENDING_REVIEW': ('待审核', 'badge-blue'),
+  'REJECTED': ('已退回', 'badge-red'),
+  'COMPLETED': ('已完成', 'badge-green')
+} %}
+{% set ai_status_meta = {
+  'PENDING': ('待执行', 'badge-gray'),
+  'RUNNING': ('运行中', 'badge-blue'),
+  'SUCCEEDED': ('完成', 'badge-green'),
+  'FAILED': ('失败', 'badge-red')
+} %}
+{% set param_defs = [
+  ('format', '开本'),
+  ('print_sheet', '印张'),
+  ('qty', '印数（册）'),
+  ('paper_type', '纸张'),
+  ('binding', '装订方式'),
+  ('color_pages', '色数档位'),
+  ('process', '表面工艺'),
+  ('note', '备注')
+] %}
+{% set sm = business_status.get(tstatus, ('未知', 'badge-gray')) %}
+{% set am = ai_status_meta.get(astatus, ('未运行', 'badge-gray')) %}
+{% set tool_type_labels = {'retrieval': '检索', 'validation': '校验', 'calculation': '计算'} %}
+{% set tool_status_labels = {'SUCCESS': '成功', 'OK': '成功', 'FAILED': '失败', 'ERROR': '失败', 'TIMEOUT': '超时'} %}
+{% set basis_type_labels = {'material': ('资料', 'badge-blue'), 'rule': ('规则', 'badge-amber'), 'calc': ('计算', 'badge-gray')} %}
+
+<div id="task-detail"
+     data-task-id="{{ task_id }}"
+     data-revision="{{ revision }}"
+     data-task-status="{{ tstatus }}"
+     data-ai-id="{{ ai_id }}"
+     data-ai-status="{{ astatus }}"
+     data-ai-timeout-ms="{{ (lim2.ai_run_timeout_s|default(90)) * 1000 }}"
+     data-can-edit="{{ '1' if allow_edit else '0' }}"
+     data-can-review="{{ '1' if can_review_here else '0' }}">
+
+  <div class="page-head detail-head">
+    <div>
+      <div class="breadcrumb"><a href="/tasks">任务列表</a><span class="sep">/</span><span class="mono">{{ t.task_no|default('—') }}</span></div>
+      <h1 class="page-title">{{ t.title|default('（未命名任务）') }}</h1>
+      <div class="title-badges">
+        <span class="badge badge-lg {{ sm[1] }}" id="task-status-badge">{{ sm[0] }}</span>
+        {% if ai %}<span class="badge badge-lg {{ am[1] }}">AI {{ am[0] }}</span>{% endif %}
+        <span class="hint">修订号 r{{ revision }}</span>
+      </div>
+    </div>
+    <div class="page-actions">
+      <a class="btn btn-ghost" href="/tasks">← 任务列表</a>
+      <button class="btn btn-ghost" type="button" id="btn-page-refresh">刷新页面</button>
+      {% if allow_edit %}<button class="btn btn-primary" type="button" id="btn-params-edit">编辑参数</button>{% endif %}
+    </div>
+  </div>
+
+  {% if err_text %}
+  <div class="notice notice-danger" role="alert">操作失败：{{ err_text }}</div>
+  {% endif %}
+  {% if qstarted %}
+  <div class="notice notice-success" role="status">AI 测算已启动（AI 任务 ID：{{ qstarted }}），页面将自动轮询运行状态与执行记录。</div>
+  {% endif %}
+  {% if qsubmitted %}
+  <div class="notice notice-success" role="status">已提交审核，等待审核员处理。</div>
+  {% endif %}
+  {% if qreviewed %}
+  <div class="notice notice-success" role="status">审核结论已提交。</div>
+  {% endif %}
+
+  {% if tstatus == 'PENDING_REVIEW' %}
+  <div class="notice notice-info">任务已提交审核，等待审核员处理。审核期间参数与版本冻结{% if can_review_here %}；请在下方“⑦ 审核”区完成审核{% endif %}。</div>
+  {% elif tstatus == 'COMPLETED' %}
+  <div class="notice notice-success">任务已完成，结果版本已冻结，可在“⑥ 结果版本”中查看历史版本内容。</div>
+  {% elif tstatus == 'REJECTED' %}
+  <div class="notice notice-danger">任务已被退回：请根据审核意见修改参数或版本后重新提交审核。</div>
+  {% endif %}
+
+  {% if t.goal %}
+  <div class="goal-strip">
+    <span class="goal-label">测算目标</span>
+    <span class="goal-text">{{ t.goal }}</span>
+  </div>
+  {% endif %}
+
+  <!-- ① 任务信息 -->
+  <section class="card" id="section-task">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">①</span> 任务信息</h2>
+      <span class="hint">参数修改后需重新运行 AI 测算，旧结果与版本仍可追溯</span>
+    </div>
+    <div class="card-body">
+      <div class="meta-grid">
+        <div class="meta-item"><span class="meta-label">任务编号</span><span class="meta-value mono">{{ t.task_no|default('—') }}</span></div>
+        <div class="meta-item"><span class="meta-label">任务状态</span><span class="meta-value">{{ sm[0] }}</span></div>
+        <div class="meta-item"><span class="meta-label">创建人</span><span class="meta-value">{{ t.created_by_name|default(t.created_by|default('—')) }}</span></div>
+        <div class="meta-item"><span class="meta-label">创建时间</span><span class="meta-value">{{ t.created_at|default('—') }}</span></div>
+        <div class="meta-item"><span class="meta-label">更新时间</span><span class="meta-value">{{ t.updated_at|default('—') }}</span></div>
+        <div class="meta-item"><span class="meta-label">业务类型</span><span class="meta-value">{{ t.business_type|default('print_cost') }}</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+      <h3 class="sub-title">印制参数</h3>
+      <div class="param-grid">
+        {% for key, label in param_defs %}
+        {% set pv = p[key] if p is mapping and key in p else none %}
+        <div class="param-item">
+          <span class="param-label">{{ label }}</span>
+          <span class="param-value">{{ pv if pv is not none and pv != '' else '—' }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <details class="json-details">
+        <summary>查看完整参数（含规则编码等扩展字段）</summary>
+        {% if p is mapping %}
+        <dl class="kv-list">
+          {% for key, value in p.items() %}
+          <dt>{{ key }}</dt>
+          <dd>{% if value is string %}{{ value }}{% elif value is boolean %}{{ '是' if value else '否' }}{% elif value is number %}{{ value }}{% elif value is sequence %}{% for item in value %}{{ item }}{% if not loop.last %}、{% endif %}{% endfor %}{% elif value is mapping %}{{ value|tojson }}{% else %}{{ value }}{% endif %}</dd>
+          {% endfor %}
+        </dl>
+        {% elif p is string %}
+        <pre class="json-block">{{ p }}</pre>
+        {% else %}
+        <pre class="json-block">{{ p|tojson(indent=2) }}</pre>
+        {% endif %}
+      </details>
+    </div>
+
+    {% if allow_edit %}
+    <form id="params-edit-form" class="card-body edit-panel" hidden>
+      <h3 class="sub-title">编辑参数</h3>
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="edit-title">任务标题</label>
+          <input id="edit-title" type="text" maxlength="100" value="{{ t.title|default('') }}">
+        </div>
+        <div class="field span-2">
+          <label for="edit-goal">测算目标</label>
+          <textarea id="edit-goal" rows="2" maxlength="500">{{ t.goal|default('') }}</textarea>
+        </div>
+        <div class="field">
+          <label for="edit-format">开本</label>
+          <select id="edit-format">
+            {% for opt in ['16开', '32开', '大32开'] %}
+            <option value="{{ opt }}"{% if p.format|default('16开') == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="edit-print_sheet">印张</label>
+          <input id="edit-print_sheet" type="number" min="0.5" max="50" step="0.5" required
+                 value="{{ p.print_sheet|default('') }}">
+        </div>
+        <div class="field">
+          <label for="edit-qty">印数（册）</label>
+          <input id="edit-qty" type="number" min="500" step="1" required value="{{ p.qty|default('') }}">
+        </div>
+        <div class="field">
+          <label for="edit-paper_type">纸张</label>
+          <input id="edit-paper_type" type="text" maxlength="50" required list="paper-suggestions"
+                 value="{{ p.paper_type|default('') }}">
+        </div>
+        <div class="field">
+          <label for="edit-binding">装订方式</label>
+          <select id="edit-binding">
+            {% for opt in ['胶装', '骑马订', '精装'] %}
+            <option value="{{ opt }}"{% if p.binding|default('胶装') == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="edit-color_pages">色数档位</label>
+          <select id="edit-color_pages">
+            {% for opt in [0, 1, 2, 3, 4] %}
+            <option value="{{ opt }}"{% if (p.color_pages|default(0))|string == opt|string %} selected{% endif %}>{{ opt }}{% if opt == 0 %}（单色）{% elif opt == 4 %}（四色）{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="edit-process">表面工艺</label>
+          <select id="edit-process">
+            {% for opt in ['无', '覆膜', 'UV', '烫金'] %}
+            <option value="{{ opt }}"{% if p.process|default('无') == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field span-2">
+          <label for="edit-note">备注</label>
+          <textarea id="edit-note" rows="2" maxlength="500">{{ p.note|default('') }}</textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" id="btn-params-save">保存参数</button>
+        <button class="btn btn-ghost" type="button" id="btn-params-cancel">取消</button>
+        <span class="hint">保存后页面自动刷新；如已提交审核需先退回才能编辑。</span>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+
+  <!-- ② 关联资料 -->
+  <section class="card" id="section-materials">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">②</span> 关联资料 <span class="count-pill">{{ linked|length }}</span></h2>
+      <span class="hint">关联资料会作为 AI 取证与依据校验的上下文</span>
+    </div>
+    <div class="card-body">
+      {% if linked %}
+      <div class="table-wrap">
+        <table class="data-table compact">
+          <thead>
+            <tr><th class="nowrap">资料编号</th><th>名称</th><th>来源</th><th class="nowrap text-center">版本</th><th class="nowrap">关联角色</th></tr>
+          </thead>
+          <tbody>
+            {% for m in linked %}
+            <tr>
+              <td class="mono nowrap">{{ m.material_no|default(m.id|default('—')) }}</td>
+              <td>{{ m.title|default('—') }}</td>
+              <td class="muted">{{ m.source|default('—') }}</td>
+              <td class="text-center">v{{ m.version_no|default(1) }}</td>
+              <td>{{ m.link_role|default('reference') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="muted">尚未关联资料。{% if allow_edit %}可从下方选择资料加入，AI 将优先引用关联资料。{% endif %}</p>
+      {% endif %}
+
+      {% if allow_edit %}
+      <form id="add-material-form" class="inline-add-form">
+        <div class="field inline-field">
+          <label for="add-material-id">选择资料</label>
+          <select id="add-material-id" required>
+            <option value="">加载资料中…</option>
+          </select>
+        </div>
+        <div class="field inline-field">
+          <label for="add-material-role">关联角色</label>
+          <select id="add-material-role">
+            <option value="reference">参考依据</option>
+            <option value="quote">报价</option>
+            <option value="spec">规格</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit">添加关联</button>
+        <a class="btn btn-ghost btn-sm" href="/materials">资料库</a>
+      </form>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ③ AI 运行 -->
+  <section class="card" id="section-ai">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">③</span> AI 运行</h2>
+      <div class="card-actions">
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-ai-refresh"{% if not ai %} hidden{% endif %}>刷新状态</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="ai-status-bar">
+        <div class="ai-status-main">
+          <span class="muted small">当前状态</span>
+          <span class="badge badge-lg {{ am[1] }}" id="ai-status-badge">{{ am[0] }}</span>
+          <span class="mode-tag {{ 'mode-mock' if ai and ai.model_mode|default('') == 'mock' else ('mode-real' if ai else 'mode-unknown') }}" id="ai-model-mode">{% if ai %}{{ (ai.model_mode|default('unknown'))|upper }}{% else %}—{% endif %}</span>
+          <span class="muted small" id="ai-model-name">{{ ai.model_name|default('') if ai else '' }}</span>
+        </div>
+        <div class="ai-status-meta">
+          <span>运行 ID：<b class="mono" id="ai-task-id-label">{{ ai_id if ai_id else '—' }}</b></span>
+          <span>开始：<span id="ai-started-at">{{ (ai.started_at|default(ai.created_at|default('—'))) if ai else '—' }}</span></span>
+          <span>结束：<span id="ai-finished-at">{{ (ai.finished_at|default('—')) if ai else '—' }}</span></span>
+          <span class="muted" id="ai-never-run"{% if ai %} hidden{% endif %}>尚未运行 AI 测算</span>
+        </div>
+      </div>
+
+      {% if ai and ai.model_mode|default('') == 'mock' %}
+      <div class="notice notice-warn">本次运行使用模拟模型（model_mode=mock），响应为确定性模拟数据，不代表真实模型能力；验收须在 LLM_MODE=real 下运行。</div>
+      {% endif %}
+
+      <div class="counter-row">
+        <div class="counter-item"><span class="counter-num" id="ai-counter-rounds">{{ counters.rounds|default(0) }}</span><span class="counter-label">模型轮次</span></div>
+        <div class="counter-item"><span class="counter-num" id="ai-counter-tools">{{ counters.tool_calls|default(0) }}</span><span class="counter-label">工具调用</span></div>
+        <div class="counter-item"><span class="counter-num" id="ai-counter-types">{{ (distinct_value|length) if distinct_value is sequence and distinct_value is not string else distinct_value }}</span><span class="counter-label">工具类型数</span></div>
+        <div class="counter-item"><span class="counter-num" id="ai-counter-model-calls">{{ model_calls_value }}</span><span class="counter-label">模型调用</span></div>
+      </div>
+
+      <div class="notice notice-danger ai-error" id="ai-error-box"{% if not (ai and astatus == 'FAILED') %} hidden{% endif %}>
+        <b>运行失败</b>
+        <code id="ai-error-code">{{ ai.error_code|default('') if ai and astatus == 'FAILED' else '' }}</code>
+        <span id="ai-error-message">{{ ai.error_message|default('') if ai and astatus == 'FAILED' else '' }}</span>
+      </div>
+
+      <div class="ai-progress" id="ai-progress"{% if astatus not in ['PENDING', 'RUNNING'] %} hidden{% endif %}>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="ai-progress-text">AI 正在执行：读取资料 → 校验参数 → 计算成本 → 生成依据…</span>
+        <span class="muted small" id="ai-progress-time"></span>
+      </div>
+      <div class="notice notice-warn" id="ai-timeout-note" hidden>
+        轮询超过限定时间仍未完成，已停止自动刷新。可点击“刷新状态”继续查询，并查看下方执行记录判断是否卡住。
+      </div>
+
+      <div class="ai-actions">
+        {% if can_run_ai %}
+        <button class="btn btn-primary" type="button" id="btn-ai-run"{% if astatus in ['PENDING', 'RUNNING'] %} disabled{% endif %}>
+          {% if astatus in ['PENDING', 'RUNNING'] %}运行中…{% else %}运行 AI 测算{% endif %}
+        </button>
+        {% endif %}
+        {% if is_demo and allow_edit %}
+        <label class="inline-field fault-field" for="ai-fault">
+          <span>故障注入（仅演示）</span>
+          <select id="ai-fault">
+            <option value="">无</option>
+            <option value="tool_timeout">tool_timeout · 工具超时</option>
+            <option value="model_error">model_error · 模型错误</option>
+            <option value="invalid_tool_args">invalid_tool_args · 非法工具参数</option>
+          </select>
+        </label>
+        {% endif %}
+        {% if allow_edit and ai and astatus == 'FAILED' %}
+        <button class="btn btn-warn" type="button" id="btn-ai-retry">重试</button>
+        {% elif allow_edit %}
+        <button class="btn btn-warn" type="button" id="btn-ai-retry" hidden>重试</button>
+        {% endif %}
+        {% if not can_run_ai and not is_operator %}
+        <span class="hint">仅创建人可在“待处理 / 已退回”状态发起 AI 测算。</span>
+        {% elif not can_run_ai %}
+        <span class="hint">当前任务状态不可发起新的 AI 测算；如需重跑请退回后操作。</span>
+        {% endif %}
+      </div>
+      <p class="hint mt-8">每次运行都会新增一条 AI 任务与完整执行记录，不会自动生成结果版本；需在“⑥ 结果版本”中人工保存。</p>
+    </div>
+  </section>
+
+  <!-- ④ 测算结果 -->
+  <section class="card" id="section-result" data-ai-id="{{ ai_id }}" data-result-ai-id="{{ result.ai_task_id|default('') if result else '' }}" data-loaded="{{ '1' if result else '0' }}">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">④</span> 测算结果</h2>
+      <div class="card-actions">
+        <span class="badge {% if not result %}badge-gray{% elif basis_ok|string in ['1', 'true', 'True', 'yes'] %}badge-green{% elif basis_ok is not none %}badge-amber{% else %}badge-gray{% endif %}" id="result-basis-status">
+          {% if not result %}依据未校验{% elif basis_ok is none %}依据未校验{% elif basis_ok|string in ['1', 'true', 'True', 'yes'] %}依据校验通过{% else %}依据存在不确定{% endif %}
+        </span>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-result-refresh"{% if not ai_id %} hidden{% endif %}>刷新结果</button>
+        {% if allow_edit %}<button class="btn btn-ghost btn-sm" type="button" id="btn-adopt-ai"{% if not result %} hidden{% endif %}>采用此结果</button>{% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="empty-state small" id="result-empty"{% if result %} hidden{% endif %}>
+        <div class="empty-icon">📊</div>
+        <p class="empty-title">尚无 AI 测算结果</p>
+        <p class="muted">运行 AI 测算后，这里将展示成本说明、明细、依据引用与不确定项。</p>
+      </div>
+
+      <div id="result-body"{% if not result %} hidden{% endif %}>
+        <div class="result-top">
+          <div class="result-content">
+            <h3 class="sub-title">成本测算说明</h3>
+            <div class="md" id="result-content-md">{{ result.content_md|default('') if result else '' }}</div>
+          </div>
+          <aside class="result-summary">
+            <div class="total-card">
+              <span class="total-label">总成本（元）</span>
+              <strong class="total-value" id="result-total">{% if total is number %}{{ "%.2f"|format(total) }}{% else %}{{ total|default('—') if total is not none else '—' }}{% endif %}</strong>
+            </div>
+            <div class="total-card">
+              <span class="total-label">单册成本（元）</span>
+              <strong class="total-value" id="result-per-copy">{% if per_copy is number %}{{ "%.2f"|format(per_copy) }}{% else %}{{ per_copy|default('—') if per_copy is not none else '—' }}{% endif %}</strong>
+            </div>
+            <div class="total-note">金额单位为人民币元；明细公式可用于人工复算。</div>
+          </aside>
+        </div>
+
+        <h3 class="sub-title">成本明细</h3>
+        <div class="table-wrap">
+          <table class="data-table compact">
+            <thead><tr><th>费用名称</th><th>计算公式</th><th class="text-right nowrap">金额（元）</th></tr></thead>
+            <tbody id="result-line-items">
+              {% for item in line_items %}
+              <tr>
+                <td>{{ item.name|default('—') }}</td>
+                <td class="formula">{{ item.formula|default('—') }}</td>
+                <td class="text-right mono">{% if item.amount is number %}{{ "%.2f"|format(item.amount) }}{% else %}{{ item.amount|default('—') }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="muted small" id="result-line-items-empty"{% if line_items %} hidden{% endif %}>暂无成本明细行。</p>
+
+        <h3 class="sub-title">依据引用 <span class="count-pill">{{ basis_refs|length }}</span></h3>
+        <ul class="basis-list" id="result-basis-refs">
+          {% for ref in basis_refs %}
+          {% set rtype = ref.type|default('') %}
+          {% set rt = basis_type_labels.get(rtype, (rtype|default('依据'), 'badge-gray')) %}
+          <li>
+            <span class="badge {{ rt[1] }}">{{ rt[0] }}</span>
+            {% if rtype in ['material', 'rule'] %}
+            <button class="link-btn mono" type="button" data-basis-type="{{ rtype }}"
+                    data-basis-id="{{ ref.id|default('') }}"
+                    data-basis-target="{{ ref.target_id|default('') }}"
+                    data-basis-label="{{ ref.label|default(ref.id|default('')) }}"
+                    title="点击查看详情">{{ ref.id|default('—') }}</button>
+            {% else %}
+            <span class="mono">{{ ref.id|default('—') }}</span>
+            {% endif %}
+            <span class="basis-label">{{ ref.label|default('') }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="muted small" id="result-basis-empty"{% if basis_refs %} hidden{% endif %}>本次结果没有依据引用，请重点关注。</p>
+
+        <div class="flag-grid">
+          <div class="flag-box flag-warn" id="result-uncertain-wrap"{% if not uncertain_all %} hidden{% endif %}>
+            <h4>不确定项</h4>
+            <ul id="result-uncertain-list">
+              {% for item in uncertain_all %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </div>
+          <div class="flag-box flag-danger" id="result-missing-wrap"{% if not missing_all %} hidden{% endif %}>
+            <h4>缺失数据</h4>
+            <ul id="result-missing-list">
+              {% for item in missing_all %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 执行记录 -->
+  <section class="card" id="section-tool-calls">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">⑤</span> 工具执行记录 <span class="count-pill" id="tool-calls-count">{{ calls|length }}</span></h2>
+      <span class="hint">系统内证据（L1）：每次工具调用落库，前端只读</span>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              <th class="nowrap">#</th>
+              <th class="nowrap">工具</th>
+              <th class="nowrap">类型</th>
+              <th>参数摘要</th>
+              <th>结果摘要</th>
+              <th>来源 ID</th>
+              <th class="nowrap">状态</th>
+              <th class="nowrap">错误码</th>
+              <th class="text-right nowrap">耗时</th>
+            </tr>
+          </thead>
+          <tbody id="tool-calls-body">
+            {% for c in calls %}
+            {% set cst = (c.status|default(''))|string %}
+            {% set ccls = 'badge-green' if cst in ['SUCCESS', 'OK', '完成'] else ('badge-red' if cst in ['FAILED', 'ERROR', 'TIMEOUT'] else 'badge-gray') %}
+            {% set args = c.args|default(c.args_json|default({})) %}
+            {% set src = c.source_ids if c.source_ids else (c.source_ids_json if c.source_ids_json and c.source_ids_json != '[]' else []) %}
+            {% set rsum = c.result_summary if c.result_summary else '—' %}
+            <tr>
+              <td class="mono">{{ c.seq|default(loop.index) }}</td>
+              <td class="mono nowrap">{{ c.tool_name|default('—') }}</td>
+              <td class="nowrap">{{ tool_type_labels.get(c.tool_type|default(''), c.tool_type|default('—')) }}</td>
+              <td class="summary-cell">
+                <span class="truncate" title="{% if args is string %}{{ args }}{% else %}{{ args|tojson }}{% endif %}">
+                  {% if args is string %}{{ args|truncate(72, true, '…') }}{% else %}{{ (args|tojson)|truncate(72, true, '…') }}{% endif %}
+                </span>
+              </td>
+              <td class="summary-cell"><span class="truncate" title="{{ rsum }}">{{ rsum|truncate(60, true, '…') }}</span></td>
+              <td class="summary-cell">
+                {% if src %}
+                  {% if src is string %}<span class="mono">{{ src }}</span>{% elif src is iterable %}<span class="mono">{{ src|join(', ') }}</span>{% else %}<span class="mono">{{ src }}</span>{% endif %}
+                {% else %}<span class="muted">—</span>{% endif %}
+              </td>
+              <td><span class="badge {{ ccls }}">{{ tool_status_labels.get(cst, cst|default('—')) }}</span></td>
+              <td class="mono">{{ c.error_code if c.error_code else '—' }}</td>
+              <td class="text-right mono">{{ (c.latency_ms ~ ' ms') if c.latency_ms is not none else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state small" id="tool-calls-empty"{% if calls %} hidden{% endif %}>
+        <p class="empty-title">暂无执行记录</p>
+        <p class="muted">运行 AI 测算后，这里会逐条展示模型选择的工具、参数、来源 ID、状态与耗时。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 版本 -->
+  <section class="card" id="section-versions">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">⑥</span> 结果版本 <span class="count-pill">{{ vlist|length }}</span></h2>
+      <span class="hint">版本只增不改；提交审核/通过后对应版本冻结</span>
+    </div>
+    <div class="card-body">
+      {% if vlist %}
+      <div class="version-list">
+        {% for v in vlist %}
+        {% set vsrc = (v.source|default('MANUAL'))|string %}
+        <div class="version-item">
+          <div class="version-head">
+            <span class="version-no">v{{ v.version_no|default(loop.index) }}</span>
+            <span class="badge {{ 'badge-blue' if vsrc == 'AI' else 'badge-green' }}">{{ 'AI 生成' if vsrc == 'AI' else '人工保存' }}</span>
+            <span class="muted small">{{ v.created_by_name|default(v.created_by|default('—')) }} · {{ v.created_at|default('—') }}</span>
+            {% if v.change_note %}<span class="version-note">{{ v.change_note }}</span>{% endif %}
+          </div>
+          <details class="version-details">
+            <summary>查看 v{{ v.version_no|default(loop.index) }} 内容</summary>
+            <pre class="md-pre">{{ v.content_md|default('（无内容）') }}</pre>
+          </details>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">暂无结果版本。运行 AI 测算后保存人工版本，或直接保存当前测算结果。</p>
+      {% endif %}
+
+      {% if allow_edit %}
+      <div class="subsection">
+        <h3 class="sub-title">保存人工版本</h3>
+        <form id="version-save-form">
+          <input type="hidden" id="version-ai-task-id" value="{{ (result.ai_task_id|default(ai_id)) if (result and not latest_v) else '' }}">
+          <div class="field">
+            <label for="version-content">版本内容（Markdown 文本） <span class="req">*</span></label>
+            <textarea id="version-content" rows="8" required placeholder="可编辑 AI 测算说明后保存为新版本">{{ vprefill }}</textarea>
+            <div class="field-hint">保存后生成 MANUAL 来源的新版本；不会自动提交审核。</div>
+          </div>
+          <div class="form-row">
+            <div class="field grow">
+              <label for="version-note">变更说明</label>
+              <input id="version-note" type="text" maxlength="200" placeholder="如：人工复核后调整单册成本说明">
+            </div>
+            <div class="form-actions-inline">
+              <button class="btn btn-primary" type="submit" id="btn-save-version">保存为新版本</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="subsection">
+        <h3 class="sub-title">提交审核</h3>
+        {% if vlist %}
+        <form id="submit-review-form" class="inline-add-form">
+          <div class="field inline-field">
+            <label for="submit-version-no">提交版本</label>
+            <select id="submit-version-no">
+              {% for v in vlist %}
+              <option value="{{ v.version_no }}"{% if v.version_no|string == latest_vno|string %} selected{% endif %}>
+                v{{ v.version_no }} · {{ 'AI 生成' if (v.source|default(''))|string == 'AI' else '人工保存' }} · {{ v.created_at|default('') }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field inline-field grow">
+            <label for="submit-comment">提交说明（可选）</label>
+            <input id="submit-comment" type="text" maxlength="200" placeholder="如：参数与依据已核对，请审核">
+          </div>
+          <button class="btn btn-primary" type="submit" id="btn-submit-review">提交审核</button>
+        </form>
+        {% else %}
+        <p class="muted">请先保存至少一个结果版本，再提交审核。</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ⑦ 审核 -->
+  {% if can_review_here or rlist %}
+  <section class="card" id="section-reviews">
+    <div class="card-header">
+      <h2 class="card-title"><span class="sec-num">⑦</span> 审核</h2>
+      {% if tstatus == 'PENDING_REVIEW' %}<span class="badge badge-blue badge-lg">待审核</span>{% endif %}
+    </div>
+    <div class="card-body">
+      {% if can_review_here %}
+      <div class="review-panel">
+        <p class="review-tip">请先核对“④ 测算结果”与“⑤ 工具执行记录”，再给出审核结论。退回时必须填写审核意见。</p>
+        <form id="review-form">
+          <div class="field">
+            <label for="review-version-no">审核版本</label>
+            <select id="review-version-no">
+              {% for v in vlist %}
+              <option value="{{ v.version_no }}"{% if v.version_no|string == latest_vno|string %} selected{% endif %}>
+                v{{ v.version_no }} · {{ 'AI 生成' if (v.source|default(''))|string == 'AI' else '人工保存' }} · {{ v.created_at|default('') }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="review-opinion">审核意见</label>
+            <textarea id="review-opinion" rows="3" maxlength="500" placeholder="通过时可填写确认意见；退回时必须说明原因"></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="button" data-review-action="APPROVE" id="btn-review-approve">通过</button>
+            <button class="btn btn-danger" type="button" data-review-action="REJECT" id="btn-review-reject">退回</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if rlist %}
+      <div class="table-wrap mt-16">
+        <table class="data-table compact">
+          <thead><tr><th class="nowrap">动作</th><th>意见</th><th class="nowrap">审核人</th><th class="nowrap">版本</th><th class="nowrap">时间</th></tr></thead>
+          <tbody>
+            {% for r in rlist %}
+            {% set raction = (r.action|default(''))|string %}
+            <tr>
+              <td><span class="badge {{ 'badge-green' if raction == 'APPROVE' else 'badge-red' }}">{{ '通过' if raction == 'APPROVE' else '退回' }}</span></td>
+              <td>{{ r.opinion|default('—') }}</td>
+              <td class="nowrap">{{ r.reviewer_name|default(r.reviewer|default('—')) }}</td>
+              <td class="nowrap">{{ ('v' ~ r.version_no) if r.version_no else '—' }}</td>
+              <td class="nowrap muted">{{ r.created_at|default('—') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="muted">暂无审核记录。</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <datalist id="paper-suggestions">
+    <option value="铜版纸157g"></option>
+    <option value="铜版纸128g"></option>
+    <option value="胶版纸70g"></option>
+    <option value="双胶纸80g"></option>
+    <option value="轻型纸60g"></option>
+    <option value="哑粉纸128g"></option>
+    <option value="白卡纸250g"></option>
+  </datalist>
+</div>
+{% endblock %}

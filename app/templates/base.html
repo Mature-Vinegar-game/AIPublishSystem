@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}印制参数校验与成本测算 AI 系统{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v=20261101">
+</head>
+<body class="page-{{ active_nav|default('default') }}">
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  {% set lim = limits|default({}, true) %}
+  {% set mode = (llm_mode|default('unknown'))|string %}
+  {% if mode == 'mock' %}
+  <div class="mock-banner" role="status">
+    <strong>模拟模式（LLM_MODE=mock）</strong>：模型响应为确定性模拟数据，仅用于开发联调与流程演示；验收需切换真实模型（LLM_MODE=real）。
+  </div>
+  {% endif %}
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/tasks" title="返回任务列表">
+        <span class="brand-mark">印</span>
+        <span class="brand-text">
+          <span class="brand-title">印制参数校验与成本测算 AI 系统</span>
+          <span class="brand-sub">Print Cost Validation &amp; AI Estimation</span>
+        </span>
+      </a>
+
+      {% if user %}
+      <nav class="main-nav" aria-label="主导航">
+        <a class="nav-link{% if active_nav == 'tasks' %} is-active{% endif %}" href="/tasks">任务列表</a>
+        <a class="nav-link{% if active_nav == 'materials' %} is-active{% endif %}" href="/materials">资料库</a>
+        <a class="nav-link{% if active_nav == 'rules' %} is-active{% endif %}" href="/rules">规则库</a>
+        <a class="nav-link{% if active_nav == 'system' %} is-active{% endif %}" href="/system">系统信息</a>
+      </nav>
+
+      <div class="userbox">
+        {% set role_label = user.role_name|default('') or ('业务操作员' if user.role_code|default('') == 'operator' else '审核员') %}
+        <span class="user-name" title="{{ user.username|default('') }}">
+          {{ user.display_name|default(user.username|default('用户')) }}
+        </span>
+        <span class="role-badge">{{ role_label }}</span>
+        <form class="inline-form" method="post" action="/logout">
+          <button class="btn btn-ghost btn-sm" type="submit">退出</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="userbox">
+        <span class="user-name muted">未登录</span>
+        <a class="btn btn-light btn-sm" href="/login">登录</a>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main id="main" class="page">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-limits" title="环境变量 MAX_TOOL_CALLS / MAX_LLM_ROUNDS / LLM_TIMEOUT_S / TOOL_TIMEOUT_MS / AI_RUN_TIMEOUT_S">
+        <span class="footer-label">运行限额</span>
+        <span>工具调用 <b>{{ lim.max_tool_calls|default(6) }}</b> 次</span>
+        <span>模型轮次 <b>{{ lim.max_llm_rounds|default(8) }}</b></span>
+        <span>模型超时 <b>{{ lim.llm_timeout_s|default(30) }}</b>s</span>
+        <span>工具超时 <b>{{ lim.tool_timeout_ms|default(3000) }}</b>ms</span>
+        <span>总时长 <b>{{ lim.ai_run_timeout_s|default(90) }}</b>s</span>
+      </div>
+      <div class="footer-mode">
+        {% if app_version %}<span class="footer-version">v{{ app_version }}</span>{% endif %}
+        <span>LLM_MODE：</span>
+        {% if mode == 'real' %}
+        <span class="mode-tag mode-real">REAL</span>
+        {% elif mode == 'mock' %}
+        <span class="mode-tag mode-mock">MOCK</span>
+        <span class="footer-warn">模拟响应，验收须使用真实模型</span>
+        {% else %}
+        <span class="mode-tag mode-unknown">{{ mode|upper }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/app.js?v=20261101" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

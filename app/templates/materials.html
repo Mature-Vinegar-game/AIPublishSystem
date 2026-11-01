@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}资料库 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set mlist = materials or items or [] %}
+{% set is_operator = user and user.role_code == 'operator' %}
+{% set err = error|default('') or (request.query_params.get('error', '') if request else '') %}
+{% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
+{% set created_flag = request.query_params.get('created', '') if request else '' %}
+{% set tf = type_filter|default('ALL') or 'ALL' %}
+{% set type_opts = type_options if type_options is defined and type_options else [
+  {'value': 'paper', 'label': '纸张报价'},
+  {'value': 'process', 'label': '工艺报价'},
+  {'value': 'binding', 'label': '装订报价'},
+  {'value': 'rate', 'label': '费率'},
+  {'value': 'book', 'label': '图书资料'}
+] %}
+{% set f = form if form is defined and form else (values if values is defined and values else {}) %}
+{% set fcontent = f.content|default('') %}
+{% set type_labels = {
+  'paper': ('纸张报价', 'badge-blue'),
+  'process': ('工艺', 'badge-amber'),
+  'binding': ('装订', 'badge-green'),
+  'rate': ('费率', 'badge-purple'),
+  'book': ('图书资料', 'badge-gray')
+} %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">资料库</h1>
+    <p class="page-sub">纸张、工艺、装订、费率等测算依据资料，共 <b>{{ mlist|length }}</b> 条；AI 工具通过关键词检索并引用。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/materials">刷新</a>
+  </div>
+</div>
+
+{% if err %}
+<div class="notice notice-danger" role="alert">保存失败：{{ err }}</div>
+{% endif %}
+{% if msg %}
+<div class="notice notice-success" role="status">{{ msg }}</div>
+{% endif %}
+{% if created_flag %}
+<div class="notice notice-success" role="status">资料新增成功。</div>
+{% endif %}
+
+<div class="content-layout">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">资料列表</h2>
+      <div class="header-tools">
+        <form class="filter-form" method="get" action="/materials">
+          <select name="type" aria-label="资料类型筛选" data-auto-submit>
+            <option value=""{% if tf == 'ALL' %} selected{% endif %}>全部类型</option>
+            {% for opt in type_opts %}
+            <option value="{{ opt.value }}"{% if tf == opt.value %} selected{% endif %}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <input class="table-filter" type="search" data-table-filter="#materials-table"
+               placeholder="筛选编号 / 名称 / 来源" aria-label="筛选资料">
+      </div>
+    </div>
+
+    {% if mlist %}
+    <div class="table-wrap">
+      <table class="data-table" id="materials-table">
+        <thead>
+          <tr>
+            <th class="nowrap">资料编号</th>
+            <th class="nowrap">类型</th>
+            <th>名称</th>
+            <th>来源</th>
+            <th class="nowrap text-center">版本</th>
+            <th class="nowrap">创建时间</th>
+            <th class="nowrap">内容</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in mlist %}
+          {% set mt = type_labels.get(m.type|default(''), (m.type|default('—'), 'badge-gray')) %}
+          <tr>
+            <td class="mono nowrap">{{ m.material_no|default('—') }}</td>
+            <td><span class="badge {{ mt[1] }}">{{ m.type_label|default(mt[0]) }}</span></td>
+            <td><b>{{ m.title|default('—') }}</b></td>
+            <td class="muted">{{ m.source|default('—') }}</td>
+            <td class="text-center">v{{ m.version_no|default(1) }}</td>
+            <td class="nowrap muted">{{ m.created_at|default('—') }}</td>
+            <td>
+              {% set mj = m.content|default(m.content_json|default({})) %}
+              <details class="json-details">
+                <summary>查看</summary>
+                {% if mj is mapping %}
+                <dl class="kv-list">
+                  {% for key, value in mj.items() %}
+                  <dt>{{ key }}</dt>
+                  <dd>{% if value is string %}{{ value }}{% elif value is boolean %}{{ '是' if value else '否' }}{% elif value is number %}{{ value }}{% elif value is sequence %}{% for item in value %}{{ item }}{% if not loop.last %}、{% endif %}{% endfor %}{% elif value is mapping %}{{ value|tojson }}{% else %}{{ value }}{% endif %}</dd>
+                  {% endfor %}
+                </dl>
+                {% elif mj is string %}
+                <pre class="json-block">{{ mj }}</pre>
+                {% else %}
+                <pre class="json-block">{{ mj|tojson(indent=2) }}</pre>
+                {% endif %}
+              </details>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📚</div>
+      <p class="empty-title">资料库暂无数据</p>
+      <p class="muted">{% if is_operator %}请先在右侧新增纸张/工艺/装订/费率资料，AI 测算才能取到单价。{% else %}请联系业务操作员补充资料。{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if is_operator %}
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">新增资料</h2>
+    </div>
+    <form id="material-create-form" class="js-json-form side-body" method="post" action="/materials/create">
+      <div class="field">
+        <label for="material-type">资料类型 <span class="req">*</span></label>
+        <select id="material-type" name="type" required>
+          <option value="paper"{% if f.type|default('') == 'paper' %} selected{% endif %}>paper · 纸张报价</option>
+          <option value="process"{% if f.type|default('') == 'process' %} selected{% endif %}>process · 工艺</option>
+          <option value="binding"{% if f.type|default('') == 'binding' %} selected{% endif %}>binding · 装订</option>
+          <option value="rate"{% if f.type|default('') == 'rate' %} selected{% endif %}>rate · 费率</option>
+          <option value="book"{% if f.type|default('') == 'book' %} selected{% endif %}>book · 图书资料</option>
+        </select>
+        <div class="field-hint">类型决定成本工具读取的单价字段。</div>
+      </div>
+
+      <div class="field">
+        <label for="material-title">资料名称 <span class="req">*</span></label>
+        <input id="material-title" name="title" type="text" required maxlength="100"
+               value="{{ f.title|default('') }}" placeholder="如：铜版纸157g">
+        <div class="field-hint">纸张名称需与任务参数中的“纸张”一致。</div>
+      </div>
+
+      <div class="field">
+        <label for="material-source">来源 <span class="req">*</span></label>
+        <input id="material-source" name="source" type="text" required maxlength="100"
+               value="{{ f.source|default('') }}" placeholder="如：供应商报价单（演示数据）">
+      </div>
+
+      <div class="field">
+        <label for="material-content">内容 JSON <span class="req">*</span></label>
+        <textarea id="material-content" name="content" rows="8" required data-json="1"
+                  placeholder='{"price_per_ream": 85, "grammage": 157, "format_fit": ["16开", "32开"]}'>{% if fcontent is string %}{{ fcontent }}{% elif fcontent %}{{ fcontent|tojson(indent=2) }}{% endif %}</textarea>
+        <div class="field-hint">
+          纸张：price_per_ream；工艺/装订：price_per_1000；费率：price_per_1000_sheets_per_color。
+        </div>
+        <div class="field-error" data-error-for="content"></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-material-example">填入示例 JSON</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">新增资料</button>
+        <a class="btn btn-ghost" href="/materials">取消</a>
+      </div>
+    </form>
+  </aside>
+  {% else %}
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">只读访问</h2>
+    </div>
+    <div class="side-body">
+      <div class="notice notice-info">审核员可查看资料与依据，新增资料需由业务操作员完成。</div>
+      <p class="hint">资料库数据用于 AI 检索与成本计算，所有引用会记录在工具执行记录的来源 ID 中。</p>
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}
