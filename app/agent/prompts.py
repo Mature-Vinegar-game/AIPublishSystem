@@ -37,6 +37,14 @@ SYSTEM_PROMPT = """你是“印制参数校验与成本测算”业务系统中�
    以及任务关联资料；禁止引用不存在、未返回或未核对的数据 ID。
 7. 最终只输出一个 JSON 对象：不要输出 Markdown 代码围栏（```），不要输出解释性前后缀，
    不要输出你的内部推理过程。JSON 中的中文内容使用中文。
+8. **工具调用要精简**（系统有调用次数上限，超限会被终止）：
+   - 建议路线：get_rules → search_quotes(category=paper) → search_quotes(category=rate) →
+     search_quotes(category=binding) →（任务有工艺时）search_quotes(category=process) →
+     validate_spec → calculate_cost。
+   - 每个类别检索一次即可；检索结果已够用时立即进入 validate_spec 与 calculate_cost，不要重复检索。
+   - 费率资料用 category=rate（印刷/制版费率），纸张用 category=paper，装订用 category=binding，工艺用 category=process。
+   - calculate_cost 只需任务参数（format/print_sheet/qty/paper_type/binding/color_pages/process），
+     无需传入检索到的 material_no；其返回的 line_items/total/per_copy 与 source.ids 可直接用于依据。
 
 【最终 JSON 契约】
 {

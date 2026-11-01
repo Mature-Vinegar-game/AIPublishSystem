@@ -1,0 +1,823 @@
+{
+  "generated_at": "2026-11-01T21:32:24",
+  "meta": {
+    "app": "出版业务 AI 系统-印制成本测算",
+    "version": "1.0.0",
+    "db": "sqlite",
+    "db_file": "app.db",
+    "db_status": "ok",
+    "llm_mode": "real",
+    "model": "deepseek-flash",
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "key_configured": true,
+    "app_env": "demo",
+    "limits": {
+      "max_tool_calls": 10,
+      "max_llm_rounds": 8,
+      "llm_timeout_s": 30,
+      "tool_timeout_ms": 3000,
+      "ai_run_timeout_s": 120,
+      "max_ai_runs": 10
+    },
+    "server_time": "2026-11-01T21:31:20+08:00"
+  },
+  "scenarios": [
+    {
+      "name": "A 输入条件变化（基线 vs 改印数/印张）",
+      "summary": {
+        "基线任务": "BT20261101-0010 状态=SUCCEEDED 总成本=14638.0 单册=4.88",
+        "改参数任务": "BT20261101-0011 状态=SUCCEEDED 总成本=27890.0 单册=5.58",
+        "说明": "两次工具参数与结果不同，依据来自各自本次执行记录"
+      },
+      "tool_calls": [
+        {
+          "id": 66,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 1,
+          "tool_name": "get_rules",
+          "tool_type": "retrieval",
+          "args": {
+            "business_type": "print_cost"
+          },
+          "args_json": "{\"business_type\": \"print_cost\"}",
+          "result_summary": "读取 15 条规则：RULE-FMT-001、RULE-SHEET-002、RULE-SHEET-003、RULE-QTY-004、RULE-QTY-005、RULE-BIND-006",
+          "source_ids": [
+            "RULE-FMT-001",
+            "RULE-SHEET-002",
+            "RULE-SHEET-003",
+            "RULE-QTY-004",
+            "RULE-QTY-005",
+            "RULE-BIND-006",
+            "RULE-BIND-007",
+            "RULE-BIND-008",
+            "RULE-PAPER-009",
+            "RULE-PAPER-010",
+            "RULE-COLOR-011",
+            "RULE-PROCESS-012",
+            "RULE-REQ-013",
+            "RULE-PRICE-014",
+            "RULE-COST-015"
+          ],
+          "source_ids_json": "[\"RULE-FMT-001\", \"RULE-SHEET-002\", \"RULE-SHEET-003\", \"RULE-QTY-004\", \"RULE-QTY-005\", \"RULE-BIND-006\", \"RULE-BIND-007\", \"RULE-BIND-008\", \"RULE-PAPER-009\", \"RULE-PAPER-010\", \"RULE-COLOR-011\", \"RULE-PROCESS-012\", \"RULE-REQ-013\", \"RULE-PRICE-014\", \"RULE-COST-015\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:36+08:00"
+        },
+        {
+          "id": 67,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 2,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "paper",
+            "keyword": "胶版纸80g"
+          },
+          "args_json": "{\"category\": \"paper\", \"keyword\": \"胶版纸80g\"}",
+          "result_summary": "找到 1 条paper报价资料",
+          "source_ids": [
+            "PAPER-001"
+          ],
+          "source_ids_json": "[\"PAPER-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:36+08:00"
+        },
+        {
+          "id": 68,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 3,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "rate",
+            "keyword": "印刷费率 制版费"
+          },
+          "args_json": "{\"category\": \"rate\", \"keyword\": \"印刷费率 制版费\"}",
+          "result_summary": "检索报价资料失败：资料库中未找到费率（关键词“印刷费率 制版费”），不得猜测单价",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "FAILED",
+          "error_code": "DATA_NOT_FOUND",
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:36+08:00"
+        },
+        {
+          "id": 69,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 4,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "binding",
+            "keyword": "胶装"
+          },
+          "args_json": "{\"category\": \"binding\", \"keyword\": \"胶装\"}",
+          "result_summary": "找到 1 条binding报价资料",
+          "source_ids": [
+            "BIND-001"
+          ],
+          "source_ids_json": "[\"BIND-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:36+08:00"
+        },
+        {
+          "id": 70,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 5,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "process",
+            "keyword": "覆膜"
+          },
+          "args_json": "{\"category\": \"process\", \"keyword\": \"覆膜\"}",
+          "result_summary": "找到 1 条process报价资料",
+          "source_ids": [
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"PROC-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:31:36+08:00"
+        },
+        {
+          "id": 71,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 6,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "rate",
+            "keyword": "千印张"
+          },
+          "args_json": "{\"category\": \"rate\", \"keyword\": \"千印张\"}",
+          "result_summary": "找到 1 条rate报价资料",
+          "source_ids": [
+            "RATE-001"
+          ],
+          "source_ids_json": "[\"RATE-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:37+08:00"
+        },
+        {
+          "id": 72,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 7,
+          "tool_name": "validate_spec",
+          "tool_type": "validation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 14,
+              "qty": 5000,
+              "paper_type": "胶版纸80g",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 14, \"qty\": 5000, \"paper_type\": \"胶版纸80g\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "参数校验通过，未发现问题",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:38+08:00"
+        },
+        {
+          "id": 73,
+          "ai_task_id": 18,
+          "business_task_id": 12,
+          "seq": 8,
+          "tool_name": "calculate_cost",
+          "tool_type": "calculation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 14,
+              "qty": 5000,
+              "paper_type": "胶版纸80g",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 14, \"qty\": 5000, \"paper_type\": \"胶版纸80g\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "总成本 27890.00 元，单册 5.58 元，5 个分项",
+          "source_ids": [
+            "PAPER-001",
+            "RATE-001",
+            "BIND-001",
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"PAPER-001\", \"RATE-001\", \"BIND-001\", \"PROC-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:38+08:00"
+        }
+      ]
+    },
+    {
+      "name": "B 资料/数据不足（不虚构）",
+      "summary": {
+        "任务": "BT20261101-0012 状态=SUCCEEDED",
+        "missing_data": "[\"纸张单价 materials(type=paper).price_per_ream（纸张名称：不存在的纸张XY，资料库无对应记录）\", \"纸张 format_fit 与 16开 的适配信息（因该纸张无建档记录，无法核对）\", \"纸张单价（不存在的纸张XY，materials.type=paper.price_per_ream）：资料库无该纸张报价\", \"纸张单价（不存在的纸张XY，materials.type=paper.price_per_ream）\"]",
+        "total/per_copy": "None / None",
+        "结论": "明确列出缺失依据，未编造总价"
+      },
+      "tool_calls": [
+        {
+          "id": 74,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 1,
+          "tool_name": "get_rules",
+          "tool_type": "retrieval",
+          "args": {
+            "business_type": "print_cost"
+          },
+          "args_json": "{\"business_type\": \"print_cost\"}",
+          "result_summary": "读取 15 条规则：RULE-FMT-001、RULE-SHEET-002、RULE-SHEET-003、RULE-QTY-004、RULE-QTY-005、RULE-BIND-006",
+          "source_ids": [
+            "RULE-FMT-001",
+            "RULE-SHEET-002",
+            "RULE-SHEET-003",
+            "RULE-QTY-004",
+            "RULE-QTY-005",
+            "RULE-BIND-006",
+            "RULE-BIND-007",
+            "RULE-BIND-008",
+            "RULE-PAPER-009",
+            "RULE-PAPER-010",
+            "RULE-COLOR-011",
+            "RULE-PROCESS-012",
+            "RULE-REQ-013",
+            "RULE-PRICE-014",
+            "RULE-COST-015"
+          ],
+          "source_ids_json": "[\"RULE-FMT-001\", \"RULE-SHEET-002\", \"RULE-SHEET-003\", \"RULE-QTY-004\", \"RULE-QTY-005\", \"RULE-BIND-006\", \"RULE-BIND-007\", \"RULE-BIND-008\", \"RULE-PAPER-009\", \"RULE-PAPER-010\", \"RULE-COLOR-011\", \"RULE-PROCESS-012\", \"RULE-REQ-013\", \"RULE-PRICE-014\", \"RULE-COST-015\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:48+08:00"
+        },
+        {
+          "id": 75,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 2,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "paper",
+            "keyword": "不存在的纸张XY"
+          },
+          "args_json": "{\"category\": \"paper\", \"keyword\": \"不存在的纸张XY\"}",
+          "result_summary": "检索报价资料失败：资料库中未找到纸张（关键词“不存在的纸张XY”），不得猜测单价",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "FAILED",
+          "error_code": "DATA_NOT_FOUND",
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:48+08:00"
+        },
+        {
+          "id": 76,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 3,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "paper",
+            "keyword": "胶版纸"
+          },
+          "args_json": "{\"category\": \"paper\", \"keyword\": \"胶版纸\"}",
+          "result_summary": "找到 2 条paper报价资料",
+          "source_ids": [
+            "PAPER-001",
+            "PAPER-002"
+          ],
+          "source_ids_json": "[\"PAPER-001\", \"PAPER-002\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:50+08:00"
+        },
+        {
+          "id": 77,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 4,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "rate"
+          },
+          "args_json": "{\"category\": \"rate\"}",
+          "result_summary": "找到 1 条rate报价资料",
+          "source_ids": [
+            "RATE-001"
+          ],
+          "source_ids_json": "[\"RATE-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:31:50+08:00"
+        },
+        {
+          "id": 78,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 5,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "binding",
+            "keyword": "胶装"
+          },
+          "args_json": "{\"category\": \"binding\", \"keyword\": \"胶装\"}",
+          "result_summary": "找到 1 条binding报价资料",
+          "source_ids": [
+            "BIND-001"
+          ],
+          "source_ids_json": "[\"BIND-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:31:50+08:00"
+        },
+        {
+          "id": 79,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 6,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "process",
+            "keyword": "覆膜"
+          },
+          "args_json": "{\"category\": \"process\", \"keyword\": \"覆膜\"}",
+          "result_summary": "找到 1 条process报价资料",
+          "source_ids": [
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"PROC-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:31:50+08:00"
+        },
+        {
+          "id": 80,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 7,
+          "tool_name": "validate_spec",
+          "tool_type": "validation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 12,
+              "qty": 3000,
+              "paper_type": "不存在的纸张XY",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 12, \"qty\": 3000, \"paper_type\": \"不存在的纸张XY\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "参数校验发现 1 个问题：纸张“不存在的纸张XY”未在资料库中找到对应报价",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:52+08:00"
+        },
+        {
+          "id": 81,
+          "ai_task_id": 19,
+          "business_task_id": 13,
+          "seq": 8,
+          "tool_name": "calculate_cost",
+          "tool_type": "calculation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 12,
+              "qty": 3000,
+              "paper_type": "不存在的纸张XY",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 12, \"qty\": 3000, \"paper_type\": \"不存在的纸张XY\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "测算印制成本失败：缺少必需单价，无法计算总成本：纸张单价（不存在的纸张XY，materials.type=paper.price_per_ream）",
+          "source_ids": [
+            "RATE-001",
+            "BIND-001",
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"RATE-001\", \"BIND-001\", \"PROC-001\"]",
+          "status": "FAILED",
+          "error_code": "DATA_NOT_FOUND",
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:31:52+08:00"
+        }
+      ]
+    },
+    {
+      "name": "C 工具/模型失败 + 重试（受控故障 tool_timeout）",
+      "summary": {
+        "首次任务": "BT20261101-0013 状态=FAILED 错误码=TOOL_TIMEOUT",
+        "失败记录": [
+          "get_rules:FAILED/TOOL_TIMEOUT"
+        ],
+        "重试": "状态=SUCCEEDED 总成本=14638.0",
+        "说明": "失败态可见、可重试；重试成功后原失败记录保留"
+      },
+      "tool_calls": [
+        {
+          "id": 82,
+          "ai_task_id": 20,
+          "business_task_id": 14,
+          "seq": 1,
+          "tool_name": "get_rules",
+          "tool_type": "retrieval",
+          "args": {
+            "business_type": "print_cost"
+          },
+          "args_json": "{\"business_type\": \"print_cost\"}",
+          "result_summary": "读取业务规则失败：故障注入：工具执行超过 3000ms 超时限制",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "FAILED",
+          "error_code": "TOOL_TIMEOUT",
+          "latency_ms": 3250,
+          "created_at": "2026-11-01T21:32:05+08:00"
+        },
+        {
+          "id": 83,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 1,
+          "tool_name": "get_rules",
+          "tool_type": "retrieval",
+          "args": {
+            "business_type": "print_cost"
+          },
+          "args_json": "{\"business_type\": \"print_cost\"}",
+          "result_summary": "读取 15 条规则：RULE-FMT-001、RULE-SHEET-002、RULE-SHEET-003、RULE-QTY-004、RULE-QTY-005、RULE-BIND-006",
+          "source_ids": [
+            "RULE-FMT-001",
+            "RULE-SHEET-002",
+            "RULE-SHEET-003",
+            "RULE-QTY-004",
+            "RULE-QTY-005",
+            "RULE-BIND-006",
+            "RULE-BIND-007",
+            "RULE-BIND-008",
+            "RULE-PAPER-009",
+            "RULE-PAPER-010",
+            "RULE-COLOR-011",
+            "RULE-PROCESS-012",
+            "RULE-REQ-013",
+            "RULE-PRICE-014",
+            "RULE-COST-015"
+          ],
+          "source_ids_json": "[\"RULE-FMT-001\", \"RULE-SHEET-002\", \"RULE-SHEET-003\", \"RULE-QTY-004\", \"RULE-QTY-005\", \"RULE-BIND-006\", \"RULE-BIND-007\", \"RULE-BIND-008\", \"RULE-PAPER-009\", \"RULE-PAPER-010\", \"RULE-COLOR-011\", \"RULE-PROCESS-012\", \"RULE-REQ-013\", \"RULE-PRICE-014\", \"RULE-COST-015\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:11+08:00"
+        },
+        {
+          "id": 84,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 2,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "paper",
+            "keyword": "胶版纸80g"
+          },
+          "args_json": "{\"category\": \"paper\", \"keyword\": \"胶版纸80g\"}",
+          "result_summary": "找到 1 条paper报价资料",
+          "source_ids": [
+            "PAPER-001"
+          ],
+          "source_ids_json": "[\"PAPER-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:11+08:00"
+        },
+        {
+          "id": 85,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 3,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "rate",
+            "keyword": "印刷 制版 费率"
+          },
+          "args_json": "{\"category\": \"rate\", \"keyword\": \"印刷 制版 费率\"}",
+          "result_summary": "检索报价资料失败：资料库中未找到费率（关键词“印刷 制版 费率”），不得猜测单价",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "FAILED",
+          "error_code": "DATA_NOT_FOUND",
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:12+08:00"
+        },
+        {
+          "id": 86,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 4,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "binding",
+            "keyword": "胶装"
+          },
+          "args_json": "{\"category\": \"binding\", \"keyword\": \"胶装\"}",
+          "result_summary": "找到 1 条binding报价资料",
+          "source_ids": [
+            "BIND-001"
+          ],
+          "source_ids_json": "[\"BIND-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:32:12+08:00"
+        },
+        {
+          "id": 87,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 5,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "process",
+            "keyword": "覆膜"
+          },
+          "args_json": "{\"category\": \"process\", \"keyword\": \"覆膜\"}",
+          "result_summary": "找到 1 条process报价资料",
+          "source_ids": [
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"PROC-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 0,
+          "created_at": "2026-11-01T21:32:12+08:00"
+        },
+        {
+          "id": 88,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 6,
+          "tool_name": "search_quotes",
+          "tool_type": "retrieval",
+          "args": {
+            "category": "rate",
+            "keyword": "印刷费"
+          },
+          "args_json": "{\"category\": \"rate\", \"keyword\": \"印刷费\"}",
+          "result_summary": "找到 1 条rate报价资料",
+          "source_ids": [
+            "RATE-001"
+          ],
+          "source_ids_json": "[\"RATE-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:14+08:00"
+        },
+        {
+          "id": 89,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 7,
+          "tool_name": "validate_spec",
+          "tool_type": "validation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 12,
+              "qty": 3000,
+              "paper_type": "胶版纸80g",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 12, \"qty\": 3000, \"paper_type\": \"胶版纸80g\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "参数校验通过，未发现问题",
+          "source_ids": [],
+          "source_ids_json": "[]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:14+08:00"
+        },
+        {
+          "id": 90,
+          "ai_task_id": 21,
+          "business_task_id": 14,
+          "seq": 8,
+          "tool_name": "calculate_cost",
+          "tool_type": "calculation",
+          "args": {
+            "params": {
+              "format": "16开",
+              "print_sheet": 12,
+              "qty": 3000,
+              "paper_type": "胶版纸80g",
+              "binding": "胶装",
+              "color_pages": 4,
+              "process": "覆膜"
+            }
+          },
+          "args_json": "{\"params\": {\"format\": \"16开\", \"print_sheet\": 12, \"qty\": 3000, \"paper_type\": \"胶版纸80g\", \"binding\": \"胶装\", \"color_pages\": 4, \"process\": \"覆膜\"}}",
+          "result_summary": "总成本 14638.00 元，单册 4.88 元，5 个分项",
+          "source_ids": [
+            "PAPER-001",
+            "RATE-001",
+            "BIND-001",
+            "PROC-001"
+          ],
+          "source_ids_json": "[\"PAPER-001\", \"RATE-001\", \"BIND-001\", \"PROC-001\"]",
+          "status": "SUCCESS",
+          "error_code": null,
+          "latency_ms": 1,
+          "created_at": "2026-11-01T21:32:15+08:00"
+        }
+      ]
+    },
+    {
+      "name": "D 越权：审核角色运行 AI 被拒",
+      "summary": {
+        "HTTP": 403,
+        "message": "当前角色无此操作权限（需要业务操作员）"
+      }
+    },
+    {
+      "name": "E 人工确认与版本（≥2 版本 + 提交 + 审核通过）",
+      "summary": {
+        "v1": "version_no=1 source=AI",
+        "v2": "version_no=2 source=MANUAL",
+        "提交": "HTTP 200 状态=PENDING_REVIEW",
+        "审核": "HTTP 200 状态=COMPLETED",
+        "版本数": 2
+      }
+    }
+  ],
+  "log_lines": [
+    "2026-11-01 21:30:53 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=stop tool_calls=0",
+    "2026-11-01 21:30:53 INFO [-] app.agent.orchestrator - 已保存 AI 结果 ai_task_id=16 basis_ok=True basis_refs=13 missing=0",
+    "2026-11-01 21:30:54 INFO [-] app.agent.orchestrator - AI 任务成功 ai_task_id=16 rounds=5 tool_calls=9 types=calculation,retrieval,validation",
+    "2026-11-01 21:30:54 INFO [cbbece81c14943ac] app.main - GET /api/ai-tasks/16 -> 200 3.6ms",
+    "2026-11-01 21:30:54 INFO [95e1e57a75a74cb0] app.main - GET /api/ai-tasks/16 -> 200 2.6ms",
+    "2026-11-01 21:30:54 INFO [cf81b0748a3447f7] app.main - GET /api/ai-tasks/16/tool-calls -> 200 3.3ms",
+    "2026-11-01 21:30:54 INFO [fc6e6958cde0415f] app.main - GET /api/ai-tasks/16/result -> 200 2.2ms",
+    "2026-11-01 21:31:20 INFO [e0619cff99014015] app.api.auth - 登录成功 user_id=1 username=operator role=operator",
+    "2026-11-01 21:31:20 INFO [e0619cff99014015] app.main - POST /api/auth/login -> 200 15.5ms",
+    "2026-11-01 21:31:20 INFO [ac98f6b3cbc04cec] app.api.auth - 登录成功 user_id=2 username=reviewer role=reviewer",
+    "2026-11-01 21:31:20 INFO [ac98f6b3cbc04cec] app.main - POST /api/auth/login -> 200 16.1ms",
+    "2026-11-01 21:31:20 INFO [31dbe273a0c94cf2] app.main - GET /api/system/meta -> 200 2.3ms",
+    "2026-11-01 21:31:20 INFO [7a51f0564c0147e3] app.main - POST /api/business-tasks -> 200 8.0ms",
+    "2026-11-01 21:31:20 INFO [06a11006a168459b] app.agent.orchestrator - 已启动 AI 任务 ai_task_id=17 business_task_id=11",
+    "2026-11-01 21:31:20 INFO [-] app.agent.orchestrator - AI 任务开始 ai_task_id=17 business_task_id=11 model_mode=real fault=None",
+    "2026-11-01 21:31:20 INFO [06a11006a168459b] app.main - POST /api/business-tasks/11/ai-tasks -> 202 6.1ms",
+    "2026-11-01 21:31:20 INFO [dd54148e719a4163] app.main - GET /api/ai-tasks/17 -> 200 3.0ms",
+    "2026-11-01 21:31:22 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=5",
+    "2026-11-01 21:31:22 INFO [37d23bf4913544db] app.main - GET /api/ai-tasks/17 -> 200 2.8ms",
+    "2026-11-01 21:31:23 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=1",
+    "2026-11-01 21:31:24 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=1",
+    "2026-11-01 21:31:25 INFO [e41d0f217a2a411a] app.main - GET /api/ai-tasks/17 -> 200 3.5ms",
+    "2026-11-01 21:31:25 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=1",
+    "2026-11-01 21:31:27 INFO [21c49e98cc7849c2] app.main - GET /api/ai-tasks/17 -> 200 3.4ms",
+    "2026-11-01 21:31:29 INFO [d301d70388b747c0] app.main - GET /api/ai-tasks/17 -> 200 3.4ms",
+    "2026-11-01 21:31:31 INFO [57a9b8cf04ad49af] app.main - GET /api/ai-tasks/17 -> 200 3.1ms",
+    "2026-11-01 21:31:33 INFO [ed3d032b2d9045ed] app.main - GET /api/ai-tasks/17 -> 200 3.2ms",
+    "2026-11-01 21:31:33 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=stop tool_calls=0",
+    "2026-11-01 21:31:33 INFO [-] app.agent.orchestrator - 已保存 AI 结果 ai_task_id=17 basis_ok=True basis_refs=17 missing=0",
+    "2026-11-01 21:31:33 INFO [-] app.agent.orchestrator - AI 任务成功 ai_task_id=17 rounds=5 tool_calls=8 types=calculation,retrieval,validation",
+    "2026-11-01 21:31:35 INFO [96c667f1e4e4456f] app.main - GET /api/ai-tasks/17 -> 200 3.1ms",
+    "2026-11-01 21:31:35 INFO [8b641cf9fb304844] app.main - GET /api/ai-tasks/17 -> 200 3.0ms",
+    "2026-11-01 21:31:35 INFO [88a8a5f32e2546ba] app.main - GET /api/ai-tasks/17/tool-calls -> 200 2.8ms",
+    "2026-11-01 21:31:35 INFO [ca6264745dc6454b] app.main - GET /api/ai-tasks/17/result -> 200 2.3ms",
+    "2026-11-01 21:31:35 INFO [0ebcb984551f4685] app.main - POST /api/business-tasks -> 200 5.3ms",
+    "2026-11-01 21:31:35 INFO [46ff07af04a642b1] app.agent.orchestrator - 已启动 AI 任务 ai_task_id=18 business_task_id=12",
+    "2026-11-01 21:31:35 INFO [-] app.agent.orchestrator - AI 任务开始 ai_task_id=18 business_task_id=12 model_mode=real fault=None",
+    "2026-11-01 21:31:35 INFO [46ff07af04a642b1] app.main - POST /api/business-tasks/12/ai-tasks -> 202 9.2ms",
+    "2026-11-01 21:31:35 INFO [63c3b6e6afd74ef1] app.main - GET /api/ai-tasks/18 -> 200 3.4ms",
+    "2026-11-01 21:31:36 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=5",
+    "2026-11-01 21:31:37 INFO [e4a4d42a22394405] app.main - GET /api/ai-tasks/18 -> 200 2.9ms",
+    "2026-11-01 21:31:37 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=1",
+    "2026-11-01 21:31:38 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:31:39 INFO [10b652678033442b] app.main - GET /api/ai-tasks/18 -> 200 3.7ms",
+    "2026-11-01 21:31:41 INFO [467f70bca4e34777] app.main - GET /api/ai-tasks/18 -> 200 3.3ms",
+    "2026-11-01 21:31:43 INFO [005eda94a3264d2f] app.main - GET /api/ai-tasks/18 -> 200 3.1ms",
+    "2026-11-01 21:31:45 INFO [187ae6dd7adf4130] app.main - GET /api/ai-tasks/18 -> 200 3.3ms",
+    "2026-11-01 21:31:47 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=stop tool_calls=0",
+    "2026-11-01 21:31:47 INFO [-] app.agent.orchestrator - 已保存 AI 结果 ai_task_id=18 basis_ok=True basis_refs=18 missing=0",
+    "2026-11-01 21:31:47 INFO [-] app.agent.orchestrator - AI 任务成功 ai_task_id=18 rounds=4 tool_calls=8 types=calculation,retrieval,validation",
+    "2026-11-01 21:31:47 INFO [4bedfc2a73db4327] app.main - GET /api/ai-tasks/18 -> 200 4.0ms",
+    "2026-11-01 21:31:47 INFO [2cca005eab3d406f] app.main - GET /api/ai-tasks/18 -> 200 2.9ms",
+    "2026-11-01 21:31:47 INFO [0915f474b1894699] app.main - GET /api/ai-tasks/18/tool-calls -> 200 2.5ms",
+    "2026-11-01 21:31:47 INFO [3bd6b4db214449f4] app.main - GET /api/ai-tasks/18/result -> 200 2.2ms",
+    "2026-11-01 21:31:47 INFO [c97ad30ed3a24716] app.main - POST /api/business-tasks -> 200 4.8ms",
+    "2026-11-01 21:31:47 INFO [edf1783b13594fdd] app.agent.orchestrator - 已启动 AI 任务 ai_task_id=19 business_task_id=13",
+    "2026-11-01 21:31:47 INFO [-] app.agent.orchestrator - AI 任务开始 ai_task_id=19 business_task_id=13 model_mode=real fault=None",
+    "2026-11-01 21:31:47 INFO [edf1783b13594fdd] app.main - POST /api/business-tasks/13/ai-tasks -> 202 5.7ms",
+    "2026-11-01 21:31:47 INFO [4bd76e26b1f24eae] app.main - GET /api/ai-tasks/19 -> 200 2.5ms",
+    "2026-11-01 21:31:48 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:31:49 INFO [caea9e5fcf0c4701] app.main - GET /api/ai-tasks/19 -> 200 3.5ms",
+    "2026-11-01 21:31:50 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=4",
+    "2026-11-01 21:31:51 INFO [e12e9f2152a3446f] app.main - GET /api/ai-tasks/19 -> 200 2.5ms",
+    "2026-11-01 21:31:52 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:31:53 INFO [5162b7f891b648ea] app.main - GET /api/ai-tasks/19 -> 200 3.0ms",
+    "2026-11-01 21:31:55 INFO [3528c70379ab4ee1] app.main - GET /api/ai-tasks/19 -> 200 3.5ms",
+    "2026-11-01 21:31:57 INFO [4cfd9181f72d49bb] app.main - GET /api/ai-tasks/19 -> 200 2.7ms",
+    "2026-11-01 21:31:59 INFO [7bda6b54af174418] app.main - GET /api/ai-tasks/19 -> 200 2.6ms",
+    "2026-11-01 21:32:01 INFO [7c59fa5eb79e41af] app.main - GET /api/ai-tasks/19 -> 200 2.6ms",
+    "2026-11-01 21:32:01 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=stop tool_calls=0",
+    "2026-11-01 21:32:01 INFO [-] app.agent.orchestrator - 已保存 AI 结果 ai_task_id=19 basis_ok=True basis_refs=12 missing=4",
+    "2026-11-01 21:32:01 INFO [-] app.agent.orchestrator - AI 任务成功 ai_task_id=19 rounds=4 tool_calls=8 types=retrieval,validation",
+    "2026-11-01 21:32:03 INFO [4d53f2cc2fe94dbc] app.main - GET /api/ai-tasks/19 -> 200 3.0ms",
+    "2026-11-01 21:32:03 INFO [b61244876899418f] app.main - GET /api/ai-tasks/19 -> 200 2.5ms",
+    "2026-11-01 21:32:03 INFO [48401b1b0319494a] app.main - GET /api/ai-tasks/19/tool-calls -> 200 2.3ms",
+    "2026-11-01 21:32:03 INFO [2abaf0f8e524415d] app.main - GET /api/ai-tasks/19/result -> 200 3.2ms",
+    "2026-11-01 21:32:03 INFO [ea1797fec80c4c0c] app.main - POST /api/business-tasks -> 200 4.2ms",
+    "2026-11-01 21:32:03 INFO [07e513547c7d4072] app.agent.orchestrator - 已启动 AI 任务 ai_task_id=20 business_task_id=14",
+    "2026-11-01 21:32:03 INFO [-] app.agent.orchestrator - AI 任务开始 ai_task_id=20 business_task_id=14 model_mode=real fault=tool_timeout",
+    "2026-11-01 21:32:03 INFO [07e513547c7d4072] app.main - POST /api/business-tasks/14/ai-tasks -> 202 5.5ms",
+    "2026-11-01 21:32:04 INFO [9bb84d8133f34770] app.main - GET /api/ai-tasks/20 -> 200 2.6ms",
+    "2026-11-01 21:32:05 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:32:06 INFO [b8ca91d5c45a4c33] app.main - GET /api/ai-tasks/20 -> 200 3.3ms",
+    "2026-11-01 21:32:08 INFO [4c8947f0caa648e1] app.main - GET /api/ai-tasks/20 -> 200 3.0ms",
+    "2026-11-01 21:32:08 WARNING [-] app.agent.orchestrator - AI 任务失败 ai_task_id=20 code=TOOL_TIMEOUT：故障注入（demo）：工具执行超时（>3000ms），本次 AI 任务置失败；可点击重试",
+    "2026-11-01 21:32:10 INFO [4d9a3822edcf4e74] app.main - GET /api/ai-tasks/20 -> 200 3.3ms",
+    "2026-11-01 21:32:10 INFO [d1f16300f4024576] app.main - GET /api/ai-tasks/20 -> 200 2.5ms",
+    "2026-11-01 21:32:10 INFO [09ba86e521d742a4] app.main - GET /api/ai-tasks/20/tool-calls -> 200 2.7ms",
+    "2026-11-01 21:32:10 INFO [115f17d6dd3d4447] app.main - GET /api/ai-tasks/20/result -> 404 3.5ms",
+    "2026-11-01 21:32:10 INFO [507a4a57e8eb4f0a] app.agent.orchestrator - 已启动 AI 任务 ai_task_id=21 business_task_id=14",
+    "2026-11-01 21:32:10 INFO [-] app.agent.orchestrator - AI 任务开始 ai_task_id=21 business_task_id=14 model_mode=real fault=None",
+    "2026-11-01 21:32:10 INFO [507a4a57e8eb4f0a] app.main - POST /api/ai-tasks/20/retry -> 202 12.5ms",
+    "2026-11-01 21:32:10 INFO [1696b1b963c4456f] app.main - GET /api/ai-tasks/21 -> 200 2.5ms",
+    "2026-11-01 21:32:11 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:32:12 INFO [a45c1289218048a2] app.main - GET /api/ai-tasks/21 -> 200 3.8ms",
+    "2026-11-01 21:32:12 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=3",
+    "2026-11-01 21:32:14 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=2",
+    "2026-11-01 21:32:14 INFO [187fb32b7ca34201] app.main - GET /api/ai-tasks/21 -> 200 2.7ms",
+    "2026-11-01 21:32:15 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=tool_calls tool_calls=1",
+    "2026-11-01 21:32:16 INFO [306d6b13f72841d2] app.main - GET /api/ai-tasks/21 -> 200 3.9ms",
+    "2026-11-01 21:32:18 INFO [5c2c6a0976c5442e] app.main - GET /api/ai-tasks/21 -> 200 2.5ms",
+    "2026-11-01 21:32:20 INFO [b2788ddc63bf459a] app.main - GET /api/ai-tasks/21 -> 200 3.4ms",
+    "2026-11-01 21:32:22 INFO [9c9f359765dd4cc0] app.main - GET /api/ai-tasks/21 -> 200 2.9ms",
+    "2026-11-01 21:32:23 INFO [-] app.agent.llm - LLM 调用完成 model=deepseek-flash finish_reason=stop tool_calls=0",
+    "2026-11-01 21:32:23 INFO [-] app.agent.orchestrator - 已保存 AI 结果 ai_task_id=21 basis_ok=True basis_refs=18 missing=0",
+    "2026-11-01 21:32:23 INFO [-] app.agent.orchestrator - AI 任务成功 ai_task_id=21 rounds=5 tool_calls=8 types=calculation,retrieval,validation",
+    "2026-11-01 21:32:24 INFO [9dcd6f8a3d9b4386] app.main - GET /api/ai-tasks/21 -> 200 3.4ms",
+    "2026-11-01 21:32:24 INFO [f046407bc77b49fe] app.main - GET /api/ai-tasks/21 -> 200 2.4ms",
+    "2026-11-01 21:32:24 INFO [b770c405bcd8417f] app.main - GET /api/ai-tasks/21/tool-calls -> 200 3.0ms",
+    "2026-11-01 21:32:24 INFO [802984ff5d614eb1] app.main - GET /api/ai-tasks/21/result -> 200 2.3ms",
+    "2026-11-01 21:32:24 INFO [45f720f3cf53451e] app.main - POST /api/business-tasks/11/ai-tasks -> 403 1.3ms",
+    "2026-11-01 21:32:24 INFO [dc1c469939334f01] app.api.results - 保存结果版本 task_id=11 version_no=1 source=AI user=operator",
+    "2026-11-01 21:32:24 INFO [dc1c469939334f01] app.main - POST /api/business-tasks/11/results -> 200 7.5ms",
+    "2026-11-01 21:32:24 INFO [89abf4c148994e0e] app.api.results - 保存结果版本 task_id=11 version_no=2 source=MANUAL user=operator",
+    "2026-11-01 21:32:24 INFO [89abf4c148994e0e] app.main - POST /api/business-tasks/11/results -> 200 2.9ms",
+    "2026-11-01 21:32:24 INFO [67eb6eb1c5e645bc] app.main - GET /api/business-tasks/11/versions -> 200 9.5ms",
+    "2026-11-01 21:32:24 INFO [298527e08d23442c] app.services.task_service - 任务提交审核 task_id=11 task_no=BT20261101-0010 version_no=1",
+    "2026-11-01 21:32:24 INFO [298527e08d23442c] app.main - POST /api/business-tasks/11/submit -> 200 7.2ms",
+    "2026-11-01 21:32:24 INFO [d1784e9d34bc4fd3] app.services.task_service - 任务审核 task_id=11 action=APPROVE reviewer=reviewer version_no=1",
+    "2026-11-01 21:32:24 INFO [d1784e9d34bc4fd3] app.main - POST /api/business-tasks/11/review -> 200 5.3ms"
+  ]
+}

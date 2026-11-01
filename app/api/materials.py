@@ -14,7 +14,7 @@ from app.api import api_error, success
 from app.auth import require_operator, require_user
 from app.db import get_db, now_iso
 from app.models import MATERIAL_TYPE_LABELS, MATERIAL_TYPES, Material, TaskMaterial
-from app.schemas import MaterialCreateRequest
+from app.schemas import MaterialCreateRequest, MaterialUpdateRequest
 from app.services import basis_service
 
 logger = logging.getLogger(__name__)
@@ -180,3 +180,32 @@ def get_material(
     data["versions"] = [_material_to_dict(row) for row in version_rows]
     data["linked_task_count"] = linked_tasks
     return success(data)
+
+
+@router.patch("/{material_id}", summary="更新资料：启用/停用/标题/来源（operator）")
+def update_material(
+    material_id: int,
+    payload: MaterialUpdateRequest,
+    user: dict = Depends(require_operator),
+    db: Session = Depends(get_db),
+):
+    """停用被 AI 结果引用的资料后，提交审核会触发依据失效校验（409 BASIS_MISMATCH，T06 用例）。"""
+    material = db.query(Material).filter(Material.id == int(material_id)).first()
+    if material is None:
+        api_error(404, "资料不存在")
+    if payload.enabled is not None:
+        material.enabled = 1 if payload.enabled else 0
+    if payload.title is not None:
+        material.title = payload.title.strip()
+    if payload.source is not None:
+        material.source = payload.source.strip() or material.source
+    db.commit()
+    db.refresh(material)
+    logger.info(
+        "更新资料 material_id=%s material_no=%s enabled=%s user=%s",
+        material.id,
+        material.material_no,
+        material.enabled,
+        user.get("username"),
+    )
+    return success(_material_to_dict(material))

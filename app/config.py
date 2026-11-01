@@ -81,9 +81,9 @@ class Settings:
         self.llm_timeout_s: int = _get_int("LLM_TIMEOUT_S", 30)
 
         self.tool_timeout_ms: int = _get_int("TOOL_TIMEOUT_MS", 3000)
-        self.ai_run_timeout_s: int = _get_int("AI_RUN_TIMEOUT_S", 90)
+        self.ai_run_timeout_s: int = _get_int("AI_RUN_TIMEOUT_S", 120)
 
-        self.max_tool_calls: int = _get_int("MAX_TOOL_CALLS", 6)
+        self.max_tool_calls: int = _get_int("MAX_TOOL_CALLS", 10)
         self.max_llm_rounds: int = _get_int("MAX_LLM_ROUNDS", 8)
         self.max_ai_runs: int = _get_int("MAX_AI_RUNS", 10)
 
@@ -105,7 +105,7 @@ class Settings:
 
     @property
     def limits(self) -> dict:
-        """五项限额（工具 6 次 / 模型 8 轮 / 模型 30s / 工具 3000ms / 总 90s + 单任务运行次数）。"""
+        """五项限额（工具 10 次 / 模型 8 轮 / 模型 30s / 工具 3000ms / 总 120s + 单任务运行次数）。"""
         return {
             "max_tool_calls": self.max_tool_calls,
             "max_llm_rounds": self.max_llm_rounds,

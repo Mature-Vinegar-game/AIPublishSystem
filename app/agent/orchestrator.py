@@ -107,12 +107,12 @@ def _as_float(value: Any, default: float) -> float:
 
 def _limits() -> dict[str, Any]:
     return {
-        "max_tool_calls": _as_int(_setting("max_tool_calls", 6), 6),
+        "max_tool_calls": _as_int(_setting("max_tool_calls", 10), 10),
         "max_llm_rounds": _as_int(_setting("max_llm_rounds", 8), 8),
         "max_ai_runs": _as_int(_setting("max_ai_runs", 10), 10),
         "tool_timeout_ms": _as_int(_setting("tool_timeout_ms", 3000), 3000),
         "llm_timeout_s": _as_float(_setting("llm_timeout_s", 30), 30.0),
-        "ai_run_timeout_s": _as_float(_setting("ai_run_timeout_s", 90), 90.0),
+        "ai_run_timeout_s": _as_float(_setting("ai_run_timeout_s", 120), 120.0),
     }
 
 

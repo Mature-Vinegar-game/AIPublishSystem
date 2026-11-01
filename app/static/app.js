@@ -612,8 +612,8 @@
     var currentAiStatus = str(root.getAttribute('data-ai-status'));
     var resultSectionNode = el('section-result');
     var lastResultAiTaskId = resultSectionNode ? str(resultSectionNode.getAttribute('data-result-ai-id')) : '';
-    var timeoutMs = Number(root.getAttribute('data-ai-timeout-ms') || 90000);
-    if (!isFinite(timeoutMs) || timeoutMs < 10000) { timeoutMs = 90000; }
+    var timeoutMs = Number(root.getAttribute('data-ai-timeout-ms') || 120000);
+    if (!isFinite(timeoutMs) || timeoutMs < 10000) { timeoutMs = 120000; }
 
     var pollTimer = null;
     var pollStart = 0;
@@ -1536,6 +1536,31 @@
     window.addEventListener('pagehide', stopPolling);
   }
 
+  /* ---------------- 资料启停（T06 演示：停用被引用资料 → 提交审核依据失效） ---------------- */
+
+  function initMaterialToggle() {
+    var buttons = document.querySelectorAll('[data-toggle-material]');
+    Array.prototype.forEach.call(buttons, function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-toggle-material');
+        var enabled = btn.getAttribute('data-material-enabled') === '1';
+        var next = !enabled;
+        if (!next && !window.confirm('停用后，引用该资料的 AI 结果在提交审核时会被判定"依据失效"（409 BASIS_MISMATCH）。确认停用？')) {
+          return;
+        }
+        btn.disabled = true;
+        try {
+          await apiFetch('/api/materials/' + encodeURIComponent(id), { method: 'PATCH', body: { enabled: next } });
+          toast('资料已' + (next ? '启用' : '停用'), 'success');
+          window.setTimeout(function () { location.reload(); }, 600);
+        } catch (e) {
+          toast(e.message || '操作失败', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
   /* ---------------- 启动 ---------------- */
 
   function initGlobal() {
@@ -1547,6 +1572,7 @@
     initJsonExamples();
     initTaskCreateForm();
     initLoginForm();
+    initMaterialToggle();
 
     document.addEventListener('click', function (event) {
       var origin = event.target;

@@ -82,7 +82,7 @@
      data-task-status="{{ tstatus }}"
      data-ai-id="{{ ai_id }}"
      data-ai-status="{{ astatus }}"
-     data-ai-timeout-ms="{{ (lim2.ai_run_timeout_s|default(90)) * 1000 }}"
+     data-ai-timeout-ms="{{ (lim2.ai_run_timeout_s|default(120)) * 1000 }}"
      data-can-edit="{{ '1' if allow_edit else '0' }}"
      data-can-review="{{ '1' if can_review_here else '0' }}">
 

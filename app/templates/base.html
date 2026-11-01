@@ -63,11 +63,11 @@
     <div class="footer-inner">
       <div class="footer-limits" title="环境变量 MAX_TOOL_CALLS / MAX_LLM_ROUNDS / LLM_TIMEOUT_S / TOOL_TIMEOUT_MS / AI_RUN_TIMEOUT_S">
         <span class="footer-label">运行限额</span>
-        <span>工具调用 <b>{{ lim.max_tool_calls|default(6) }}</b> 次</span>
+        <span>工具调用 <b>{{ lim.max_tool_calls|default(10) }}</b> 次</span>
         <span>模型轮次 <b>{{ lim.max_llm_rounds|default(8) }}</b></span>
         <span>模型超时 <b>{{ lim.llm_timeout_s|default(30) }}</b>s</span>
         <span>工具超时 <b>{{ lim.tool_timeout_ms|default(3000) }}</b>ms</span>
-        <span>总时长 <b>{{ lim.ai_run_timeout_s|default(90) }}</b>s</span>
+        <span>总时长 <b>{{ lim.ai_run_timeout_s|default(120) }}</b>s</span>
       </div>
       <div class="footer-mode">
         {% if app_version %}<span class="footer-version">v{{ app_version }}</span>{% endif %}

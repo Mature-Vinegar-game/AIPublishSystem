@@ -130,7 +130,7 @@ python -m pytest tests -q
 
 ## 6. 演示/验收操作路径（建议顺序）
 
-1. `GET /api/system/meta` 或页面"系统信息"：确认 `llm_mode=real`、`key_configured=true`，页脚展示五项限额（工具 6 次 / 模型 8 轮 / 30s / 3000ms / 90s）。
+1. `GET /api/system/meta` 或页面"系统信息"：确认 `llm_mode=real`、`key_configured=true`，页脚展示五项限额（工具 10 次 / 模型 8 轮 / 30s / 3000ms / 120s）。
 2. 用 `operator/123456` 登录 → 任务列表 → 打开示例任务 `BT-DEMO-0001`。
 3. 点击"运行 AI 测算"：后台线程执行，页面每 2s 轮询 `GET /api/ai-tasks/{id}`；结果区显示 `content_md`、结构化 `line_items/total/per_copy`、`basis_refs`（依据三跳）、不确定项/缺失项；执行记录表展示每次工具调用的参数、状态、来源 ID、耗时。
 4. "采用 AI 结果"保存为 **v1**（`source=AI`）→ 人工修改再保存 **v2**（`source=MANUAL`）。
@@ -150,7 +150,7 @@ python -m pytest tests -q
 
 ---
 
-## 7. 接口清单（23 个，统一 `/api` 前缀）
+## 7. 接口清单（24 个，统一 `/api` 前缀）
 
 | # | 方法/路径 | 说明 |
 |---|---|---|
@@ -177,6 +177,7 @@ python -m pytest tests -q
 | 21 | `GET /api/rules` | 规则列表 |
 | 22 | `GET /api/rules/{id}` | 规则详情 |
 | 23 | `GET /api/system/meta` | 系统信息（模式/模型/Key 状态/限额） |
+| 24 | `PATCH /api/materials/{id}` | 资料启用/停用/标题/来源（operator；停用被引用资料后提交审核触发依据失效 409） |
 
 统一响应：成功 `{"code":0,"message":"ok","data":...,"trace_id":"..."}`；错误同结构且 `code` 为 400/401/403/404/409/429/500。时间统一 ISO8601（带时区）。
 

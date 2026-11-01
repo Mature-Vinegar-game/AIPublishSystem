@@ -38,7 +38,7 @@
 
 ## 2. 环境变量（`.env`，Lead 已创建占位）
 
-`APP_ENV=demo|dev`、`DATABASE_URL=sqlite:///./data/app.db`、`SECRET_KEY`、`LLM_MODE=real|mock`、`LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`、`LLM_TIMEOUT_S=30`、`TOOL_TIMEOUT_MS=3000`、`AI_RUN_TIMEOUT_S=90`、`MAX_TOOL_CALLS=6`、`MAX_LLM_ROUNDS=8`、`MAX_AI_RUNS=10`。
+`APP_ENV=demo|dev`、`DATABASE_URL=sqlite:///./data/app.db`、`SECRET_KEY`、`LLM_MODE=real|mock`、`LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`、`LLM_TIMEOUT_S=30`、`TOOL_TIMEOUT_MS=3000`、`AI_RUN_TIMEOUT_S=120`、`MAX_TOOL_CALLS=10`、`MAX_LLM_ROUNDS=8`、`MAX_AI_RUNS=10`。
 
 ## 3. 数据模型（SQLite，SQLAlchemy 2.x，10 张表；时间用 ISO8601 字符串）
 
@@ -53,7 +53,7 @@
 9. `result_versions(id PK, business_task_id, version_no INT, source TEXT, content_md, structured_json, basis_refs_json, change_note, created_by, created_at, UNIQUE(task_id,version_no))`；source ∈ `AI|MANUAL`。
 10. `review_records(id PK, business_task_id, version_id, action TEXT, opinion, reviewer_id, created_at)`；action ∈ `APPROVE|REJECT`。
 
-## 4. 后端接口（23 个，统一 `/api` 前缀；JSON）
+## 4. 后端接口（24 个，统一 `/api` 前缀；JSON）
 
 | # | 方法/路径 | 入参 | 出参 data | 权限 |
 |---|---|---|---|---|
@@ -80,6 +80,7 @@
 | 21 | GET /rules | business_type?,keyword? | items[] | 登录 |
 | 22 | GET /rules/{id} | — | 详情 | 登录 |
 | 23 | GET /system/meta | — | app,version,db,llm_mode,model,key_configured,limits{...},server_time | 登录 |
+| 24 | PATCH /materials/{id} | enabled?,title?,source? | 更新后的资料 | operator（停用被引用资料后提交审核 → 409 BASIS_MISMATCH；T06 依据不一致演示） |
 
 错误码：400 参数/状态非法；401 未登录；403 角色不足；404 对象不属于本人/不在审核范围；409 状态冲突/重复提交/版本冻结；429 超限；500 内部错误（统一异常处理器）。所有写接口后端校验"角色+对象归属+状态"。
 
@@ -123,17 +124,17 @@
   6. 成功：写 `ai_results`（content_md/structured/basis_refs/basis_ok/uncertain/missing）→ ai_tasks SUCCEEDED。失败：FAILED + error_code/error_message。
 - 故障注入（仅 `APP_ENV=demo`，请求级参数）：`tool_timeout`（首次工具强制 sleep > TOOL_TIMEOUT_MS → TOOL_TIMEOUT）、`model_error`（直接 FAILED MODEL_ERROR）、`invalid_tool_args`（首次工具强制非法参数 → TOOL_ARGS_INVALID）；不依赖改环境变量、不重启进程。
 - 最终 JSON 期望：`{content_md:str, structured:{line_items:[...],total:num|null,per_copy:num|null,missing:[...],uncertain:[...]}, basis_refs:[{type:'material'|'rule'|'calc', id:str, label:str}], uncertain_items:[str], missing_data:[str]}`；`content_md` 用中文 Markdown 写成本测算说明与依据。
-- 记录：`tool_call_records` 每调用一条（seq/tool_name/tool_type/args_json/result_summary≤200字/source_ids_json/status/error_code/latency_ms）；`ai_tasks.counters_json` 记 rounds/tool_calls/distinct_types/model_calls；页脚展示限额（6/8/30s/3000ms/90s）。
+- 记录：`tool_call_records` 每调用一条（seq/tool_name/tool_type/args_json/result_summary≤200字/source_ids_json/status/error_code/latency_ms）；`ai_tasks.counters_json` 记 rounds/tool_calls/distinct_types/model_calls；页脚展示限额（10/8/30s/3000ms/120s）。
 - `POST /ai-tasks/{id}/retry`：仅 FAILED 可重试；新建 ai_task（同 business_task_id）并启动线程；受 MAX_AI_RUNS=10 限制（超 →429）。
 - 真实/模拟：`/api/system/meta` 返回 `llm_mode` 与 `key_configured`；页面顶部/结果页标注 model_mode；**验收固定 real**。
 
 ## 7. 前端（S3：Jinja2 + 原生 JS，无构建）
 
-- `base.html`：顶部导航（任务列表 / 资料库 / 规则库 / 系统信息 / 当前用户+角色 / 退出）+ 内容块 + 页脚（限额展示：工具 6 次、模型 8 轮、模型 30s、工具 3000ms、总 90s；LLM_MODE）。
+- `base.html`：顶部导航（任务列表 / 资料库 / 规则库 / 系统信息 / 当前用户+角色 / 退出）+ 内容块 + 页脚（限额展示：工具 10 次、模型 8 轮、模型 30s、工具 3000ms、总 120s；LLM_MODE）。
 - `login.html`：用户名/密码表单（POST /login，服务端表单）；演示账号提示（operator/123456、reviewer/123456）。
 - `tasks.html`：任务表格（task_no/title/status/创建人/更新时间/版本数/AI 状态）+ "新建任务"按钮；按状态筛选（服务端 query）。
 - `task_new.html`：表单字段：title*、goal*、book_title、format（16开/32开/大32开）、print_sheet*、qty*、paper_type*、binding*（胶装/骑马订/精装）、color_pages（0-4）、process（无/覆膜/UV/烫金）、note；提交 POST /tasks/create；JS 做必填与数值范围前端提示（后端仍校验）。
-- `task_detail.html`：①任务信息与参数（可编辑）；②关联资料；③AI 运行区：按钮"运行 AI 测算"（POST /tasks/{id}/ai-run 前端聚合 → 调 API 12）、状态徽标（PENDING/RUNNING/SUCCEEDED/FAILED）、轮询 GET /api/ai-tasks/{id}（2s，90s 超时提示）、失败显示错误码+重试按钮；④结果区：content_md 渲染（Markdown 简版：换行/标题/列表/表格用 CSS pre-wrap 即可）、结构化明细表（line_items/formula/amount）、依据列表（basis_refs 可点击 → GET /materials/{id} 或 /rules/{id} 详情页/弹层）、不确定项/缺失项；⑤执行记录表（tool_call_records 全字段）；⑥版本区：版本列表（v1/v2…来源/操作人/时间/意见）+ "保存人工版本"表单；⑦审核区（reviewer 才显示：通过/退回 + 意见）；⑧操作：提交审核、退回后重新提交、历史查询。
+- `task_detail.html`：①任务信息与参数（可编辑）；②关联资料；③AI 运行区：按钮"运行 AI 测算"（POST /tasks/{id}/ai-run 前端聚合 → 调 API 12）、状态徽标（PENDING/RUNNING/SUCCEEDED/FAILED）、轮询 GET /api/ai-tasks/{id}（2s，120s 超时提示）、失败显示错误码+重试按钮；④结果区：content_md 渲染（Markdown 简版：换行/标题/列表/表格用 CSS pre-wrap 即可）、结构化明细表（line_items/formula/amount）、依据列表（basis_refs 可点击 → GET /materials/{id} 或 /rules/{id} 详情页/弹层）、不确定项/缺失项；⑤执行记录表（tool_call_records 全字段）；⑥版本区：版本列表（v1/v2…来源/操作人/时间/意见）+ "保存人工版本"表单；⑦审核区（reviewer 才显示：通过/退回 + 意见）；⑧操作：提交审核、退回后重新提交、历史查询。
 - `materials.html`：列表 + 新增表单（type/title/source/content JSON 文本域）+ 详情查看；`rules.html` 类似。
 - `style.css`：简洁专业（深蓝主色、卡片、表格斑马纹、状态徽标颜色：PENDING 灰/RUNNING 蓝/SUCCEEDED 绿/FAILED 红）。
 - `app.js`：AI 轮询与表单增强；不使用前端框架。

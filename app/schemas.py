@@ -88,6 +88,14 @@ class MaterialCreateRequest(_Base):
     version_no: Optional[int] = Field(default=None, ge=1)
 
 
+class MaterialUpdateRequest(_Base):
+    """资料更新：启用/停用、标题、来源。停用被引用资料后提交审核会触发依据失效（T06）。"""
+
+    enabled: Optional[bool] = Field(default=None, description="true=启用，false=停用")
+    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    source: Optional[str] = Field(default=None, max_length=200)
+
+
 class RuleCreateRequest(_Base):
     rule_code: str = Field(..., min_length=1, max_length=64)
     name: str = Field(..., min_length=1, max_length=200)
@@ -107,5 +115,6 @@ __all__ = [
     "SubmitRequest",
     "ReviewRequest",
     "MaterialCreateRequest",
+    "MaterialUpdateRequest",
     "RuleCreateRequest",
 ]

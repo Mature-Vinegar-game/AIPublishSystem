@@ -74,6 +74,7 @@
             <th>来源</th>
             <th class="nowrap text-center">版本</th>
             <th class="nowrap">创建时间</th>
+            <th class="nowrap">状态/操作</th>
             <th class="nowrap">内容</th>
           </tr>
         </thead>
@@ -87,6 +88,21 @@
             <td class="muted">{{ m.source|default('—') }}</td>
             <td class="text-center">v{{ m.version_no|default(1) }}</td>
             <td class="nowrap muted">{{ m.created_at|default('—') }}</td>
+            <td class="nowrap">
+              {% if m.enabled|default(1) %}
+              <span class="badge badge-success">启用</span>
+              {% else %}
+              <span class="badge badge-gray">已停用</span>
+              {% endif %}
+              {% if is_operator %}
+              <button class="btn btn-ghost btn-sm" type="button"
+                      data-toggle-material="{{ m.id }}"
+                      data-material-enabled="{{ '1' if m.enabled|default(1) else '0' }}"
+                      title="停用被引用资料后，提交审核会触发依据失效校验（T06 演示）">
+                {{ '停用' if m.enabled|default(1) else '启用' }}
+              </button>
+              {% endif %}
+            </td>
             <td>
               {% set mj = m.content|default(m.content_json|default({})) %}
               <details class="json-details">

@@ -955,7 +955,8 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "description": (
                 "检索资料库中的纸张、工艺、装订、费率报价资料。"
                 "按关键词或类型检索，返回 material_no/title/type/source/version_no/content。"
-                "无结果返回 DATA_NOT_FOUND；不得猜测单价。"
+                "category：paper=纸张报价、rate=印刷/制版费率、binding=装订费、process=工艺费。"
+                "每个类别检索一次即可；无结果返回 DATA_NOT_FOUND；不得猜测单价。"
             ),
             "parameters": PARAM_SCHEMAS["search_quotes"],
         },
@@ -988,7 +989,9 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "name": "calculate_cost",
             "description": (
                 "从资料库读取纸张/工艺/装订/费率单价，按统一公式计算成本。"
-                "返回 line_items（含 formula）、total、per_copy、currency、missing。"
+                "只需传任务参数（format/print_sheet/qty/paper_type/binding/color_pages/process），"
+                "无需先传 material_no；内部按 paper_type/binding/process 查找资料。"
+                "返回 line_items（含 formula）、total、per_copy、currency、missing、source.ids。"
                 "缺少任何必需单价时返回 DATA_NOT_FOUND 与 missing，不得估算。"
             ),
             "parameters": PARAM_SCHEMAS["calculate_cost"],
