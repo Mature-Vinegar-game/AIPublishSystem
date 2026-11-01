@@ -1,0 +1,126 @@
+{
+  "generated_at": "2026-11-01T23:01:06",
+  "base": "http://127.0.0.1:8000",
+  "results": [
+    {
+      "name": "GET /login 渲染",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "operator 登录跳转 /tasks",
+      "ok": true,
+      "detail": "http://127.0.0.1:8000/tasks"
+    },
+    {
+      "name": "页面 /tasks",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "页面 /tasks/new",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "页面 /materials",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "页面 /rules",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "页面 /system",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情：AI 区/结果/记录/版本/审核区块",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情：结果包含 14638.00 与 4.88",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情：真实模式 REAL 标识",
+      "ok": true,
+      "detail": "REAL"
+    },
+    {
+      "name": "详情：执行记录行数 > 0",
+      "ok": true,
+      "detail": "9"
+    },
+    {
+      "name": "详情：版本区含 v1/v2 或 AI/人工来源",
+      "ok": true,
+      "detail": "⑥\n结果版本\n2\n版本只增不改；提交审核/通过后对应版本冻结\nv2\n人工保存\n张伟 · 2026-11-01T21:45:16+08:00\n人工复核保存\n查看 "
+    },
+    {
+      "name": "详情：审核记录（通过）",
+      "ok": true,
+      "detail": "⑦\n审核\n动作\t意见\t审核人\t版本\t时间\n通过\t复算一致，同意\t李静\tv2\t2026-11-01T21:45:17+08:00"
+    },
+    {
+      "name": "依据弹层可打开",
+      "ok": true,
+      "detail": "modal"
+    },
+    {
+      "name": "资料启停：点击后状态切换",
+      "ok": true,
+      "detail": "id=14 before=1"
+    },
+    {
+      "name": "资料启停：已恢复原状态",
+      "ok": true,
+      "detail": "after=1"
+    },
+    {
+      "name": "三张图页面三节齐全",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "三张图页签可切换",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reviewer 可打开任务详情",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reviewer 不显示运行 AI 按钮",
+      "ok": false,
+      "detail": ""
+    },
+    {
+      "name": "JS 控制台无 error",
+      "ok": false,
+      "detail": "['Failed to load resource: the server responded with a status of 404 (Not Found)']"
+    },
+    {
+      "name": "无页面未捕获异常",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "无失败请求（4xx/5xx）",
+      "ok": true,
+      "detail": "[]"
+    }
+  ],
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "page_errors": [],
+  "failed_responses": []
+}

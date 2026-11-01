@@ -1066,6 +1066,12 @@ def system_page(request: Request, db: Session = Depends(get_db)):
         return HTMLResponse(_system_fallback_html(meta))
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """避免浏览器默认请求 favicon 产生 404（不影响功能，保持控制台干净）。"""
+    return HTMLResponse(content="", status_code=204)
+
+
 DIAGRAMS_FILE = BASE_DIR / "docs" / "三张图演示.html"
 
 
