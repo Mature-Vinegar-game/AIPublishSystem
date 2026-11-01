@@ -9,6 +9,9 @@ vendor_broken/
 .tmp/
 .tmp2/
 .pytest-tmp/
+.pytest_cache/
+pytest-cache-files-*/
+pytest-of-*/
 .sandbox/
 _acl_recovery/
 
