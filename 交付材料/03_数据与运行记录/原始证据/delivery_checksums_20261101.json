@@ -1,22 +1,24 @@
 {
-  "交付材料 zip": {
-    "size": 1492190,
-    "sha256": "08f5ec5f54f4ca9fb545e643e52430e04885d355c0e8a2afe7c919ce84b8319b"
+  "submission": {
+    "size": 1495021,
+    "sha256": "2365794dfb7bc3f00b59a68c1bf21514a1377fb2ab0f9a728dc2bd9a5c0a306b"
   },
-  "源码 zip": {
-    "size": 767701,
-    "sha256": "0f633abd2aae8733c4973ca0006e0d5eee3ab71dcf5f34edd2df80a113ed2d88"
+  "source": {
+    "size": 769836,
+    "sha256": "bbc641aad1240c09a9c8a7764d843c01e00877fd8c9f3d9bcc4a55b7627e75bf"
   },
-  "需求与设计说明.docx": {
+  "docx": {
     "size": 513349,
     "sha256": "98565faa82d412e37e201f7370314ca285b0f213fedb11bebd5ae818856f9db7"
   },
-  "三张图演示.html": {
+  "html": {
     "size": 30869,
     "sha256": "e1aa1b378b65ae16424ee0c1bcd0fd58885d53a0c576a903a5fd1eab9b1e24e8"
   },
-  "00_材料索引与提交自检.md": {
+  "index": {
     "size": 3325,
     "sha256": "fda1147adf70827bde43b4e8ea6a43770c77654ba8eca78f48c665c6bc68bd10"
-  }
+  },
+  "delivery_files": 40,
+  "submission_entries": 40
 }

@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-11-01T22:49:45",
+  "meta": {
+    "app": "出版业务 AI 系统-印制成本测算",
+    "version": "1.0.0",
+    "db": "sqlite",
+    "db_file": "app.db",
+    "db_status": "ok",
+    "llm_mode": "real",
+    "model": "deepseek-flash",
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "key_configured": true,
+    "app_env": "demo",
+    "limits": {
+      "max_tool_calls": 10,
+      "max_llm_rounds": 8,
+      "llm_timeout_s": 30,
+      "tool_timeout_ms": 3000,
+      "ai_run_timeout_s": 120,
+      "max_ai_runs": 10
+    },
+    "server_time": "2026-11-01T22:48:43+08:00"
+  },
+  "steps": [
+    {
+      "step": "输入条件变化",
+      "detail": "基线 total=14638.0 per=4.88 → 改参数 total=27890.0 per=5.58",
+      "ok": true
+    },
+    {
+      "step": "人工确认与版本",
+      "detail": "版本数=2 sources=['MANUAL', 'AI']",
+      "ok": true
+    },
+    {
+      "step": "工具失败 + 重试",
+      "detail": "首次=FAILED/TOOL_TIMEOUT；重试=SUCCEEDED",
+      "ok": true
+    },
+    {
+      "step": "依据失效（T06）",
+      "detail": "停用 HTTP=200；提交 HTTP=409；返回=提交校验未通过：版本 v1 有 1 条依据已失效，请重新运行 AI 或更新依据后重试",
+      "ok": true
+    },
+    {
+      "step": "越权拒绝",
+      "detail": "reviewer 运行AI=403；创建任务=403",
+      "ok": true
+    },
+    {
+      "step": "页面可达性",
+      "detail": "/tasks=200；/tasks/40=200；/materials=200；/rules=200；/system=200；/diagrams=200",
+      "ok": true
+    }
+  ]
+}
