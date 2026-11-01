@@ -4,6 +4,7 @@ r"""生成《交付材料/》目录：5 项提交物 + 材料索引 + 表7/表8 
 使用 bundled Python（含 python-docx）运行：
   C:\Users\LC_CC\.dsh\dsh-runtimes\...\python.exe scripts/_make_delivery.py
 """
+import hashlib
 import io
 import os
 import shutil
@@ -369,6 +370,14 @@ start.bat
 
 > 注意：本材料包不含 `.env`、数据库、日志与任何真实密钥；演示数据均为教学模拟数据。
 """)
+
+    # 文件校验值（SHA256SUMS.txt，供提交前完整性核对）
+    sha_lines = []
+    for p in sorted(DELIVERY.rglob("*")):
+        if p.is_file() and p.name != "SHA256SUMS.txt":
+            h = hashlib.sha256(p.read_bytes()).hexdigest()
+            sha_lines.append(f"{h}  {p.relative_to(DELIVERY).as_posix()}")
+    (DELIVERY / "SHA256SUMS.txt").write_text("\n".join(sha_lines) + "\n", encoding="utf-8")
 
     # 统计
     total_files = sum(1 for _ in DELIVERY.rglob("*") if _.is_file())
