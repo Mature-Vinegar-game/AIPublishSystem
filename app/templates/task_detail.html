@@ -70,6 +70,9 @@
   ('process', '表面工艺'),
   ('note', '备注')
 ] %}
+{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装'] %}
+{% set process_opts = (['无'] + process_options) if process_options is defined and process_options else ['无', '覆膜', 'UV', '烫金'] %}
+{% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
 {% set sm = business_status.get(tstatus, ('未知', 'badge-gray')) %}
 {% set am = ai_status_meta.get(astatus, ('未运行', 'badge-gray')) %}
 {% set tool_type_labels = {'retrieval': '检索', 'validation': '校验', 'calculation': '计算'} %}
@@ -190,7 +193,7 @@
         <div class="field">
           <label for="edit-format">开本</label>
           <select id="edit-format">
-            {% for opt in ['16开', '32开', '大32开'] %}
+            {% for opt in format_opts %}
             <option value="{{ opt }}"{% if p.format|default('16开') == opt %} selected{% endif %}>{{ opt }}</option>
             {% endfor %}
           </select>
@@ -212,7 +215,7 @@
         <div class="field">
           <label for="edit-binding">装订方式</label>
           <select id="edit-binding">
-            {% for opt in ['胶装', '骑马订', '精装'] %}
+            {% for opt in binding_opts %}
             <option value="{{ opt }}"{% if p.binding|default('胶装') == opt %} selected{% endif %}>{{ opt }}</option>
             {% endfor %}
           </select>
@@ -228,7 +231,7 @@
         <div class="field">
           <label for="edit-process">表面工艺</label>
           <select id="edit-process">
-            {% for opt in ['无', '覆膜', 'UV', '烫金'] %}
+            {% for opt in process_opts %}
             <option value="{{ opt }}"{% if p.process|default('无') == opt %} selected{% endif %}>{{ opt }}</option>
             {% endfor %}
           </select>

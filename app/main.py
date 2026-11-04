@@ -496,6 +496,34 @@ def tasks_page(
 
 
 # ============================ 新建任务 ============================
+def _form_options(db: Session) -> dict:
+    """任务表单下拉选项统一从资料库读取（新增资料后无需改模板）。"""
+    papers = (
+        db.query(Material)
+        .filter(Material.type == "paper", Material.enabled == 1)
+        .order_by(Material.material_no.asc())
+        .all()
+    )
+    processes = (
+        db.query(Material)
+        .filter(Material.type == "process", Material.enabled == 1)
+        .order_by(Material.material_no.asc())
+        .all()
+    )
+    bindings = (
+        db.query(Material)
+        .filter(Material.type == "binding", Material.enabled == 1)
+        .order_by(Material.material_no.asc())
+        .all()
+    )
+    return {
+        "paper_types": [paper.title for paper in papers],
+        "process_options": [process.title for process in processes],
+        "binding_options": [binding.title for binding in bindings],
+        "formats": ["16开", "32开", "大32开"],
+    }
+
+
 def _task_new_context(user: Optional[dict], db: Session, **extra) -> dict:
     papers = (
         db.query(Material)
@@ -687,6 +715,7 @@ def task_detail_page(task_id: int, request: Request, db: Session = Depends(get_d
         versions=version_service.list_versions(db, task.id),
         reviews=task_service.reviews_for_task(db, task.id),
         **_permissions(user, task),
+        **_form_options(db),
     )
     return _render(request, "task_detail.html", context)
 
