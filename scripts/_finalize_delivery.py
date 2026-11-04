@@ -2,6 +2,7 @@
 """最终打包：重建交付目录 → 重建提交 zip → 计算校验值 → 更新 docs/13 与 evidence。"""
 import hashlib
 import json
+from datetime import datetime
 import os
 import subprocess
 import zipfile
@@ -10,7 +11,8 @@ from pathlib import Path
 ROOT = Path(r"F:\deepseek workarea\出版AI系统")
 BUNDLED = Path(r"C:\Users\LC_CC\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe")
 DELIVERY = ROOT / "交付材料"
-SUB_ZIP = Path(r"F:\deepseek workarea\出版AI系统_交付材料_20261101.zip")
+DATE_STR = datetime.now().strftime("%Y%m%d")
+SUB_ZIP = Path(rf"F:\deepseek workarea\出版AI系统_交付材料_{DATE_STR}.zip")
 DOC13 = ROOT / "docs" / "13_提交包清单与校验值.md"
 EVID_JSON = ROOT / "evidence" / "delivery_checksums_20261101.json"
 
@@ -63,7 +65,7 @@ def main():
     EVID_JSON.write_text(json.dumps(vals, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("[4/4] 更新 docs/13 与证据 ...")
-    content = f"""# 提交包清单与校验值（2026-11-01）
+    content = f"""# 提交包清单与校验值（{datetime.now().strftime("%Y-%m-%d")}）
 
 > 本文记录最终提交包的文件清单、SHA-256 校验值与敏感信息扫描结论，便于提交前核对完整性；
 > 提交包内另有 `SHA256SUMS.txt`（逐文件校验值）。**本文件由 `scripts/_finalize_delivery.py` 自动生成。**
