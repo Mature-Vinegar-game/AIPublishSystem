@@ -1030,12 +1030,66 @@
       });
     }
 
+    function renderPlans(plans, structured) {
+      var wrap = el('result-plans-wrap');
+      var body = el('result-plans-body');
+      if (!wrap || !body) { return; }
+      while (body.firstChild) { body.removeChild(body.firstChild); }
+      if (!Array.isArray(plans) || !plans.length) {
+        wrap.hidden = true;
+        return;
+      }
+      var budget = structured && structured.budget_total !== undefined && structured.budget_total !== null
+        ? structured.budget_total : null;
+      var budgetNode = el('result-plan-budget');
+      if (budgetNode) {
+        budgetNode.textContent = budget !== null ? ('预算 ' + formatMoney(budget) + ' 元') : '';
+      }
+      setText('result-plans-count', plans.length);
+      plans.forEach(function (plan, index) {
+        var tr = document.createElement('tr');
+        function cell(text, cls) {
+          var td = document.createElement('td');
+          if (cls) { td.className = cls; }
+          td.textContent = text === null || text === undefined || text === '' ? '—' : str(text);
+          tr.appendChild(td);
+        }
+        cell(plan.plan_no || (index + 1), 'mono');
+        cell(plan.paper_type);
+        cell(plan.binding);
+        cell(plan.process || '无');
+        cell(formatMoney(plan.total), 'text-right mono');
+        cell(formatMoney(plan.per_copy), 'text-right mono');
+        var budgetTd = document.createElement('td');
+        var badge = document.createElement('span');
+        var within = plan.within_budget !== false;
+        badge.className = 'badge ' + (within ? 'badge-green' : 'badge-amber');
+        badge.textContent = within ? '预算内' : '超预算';
+        budgetTd.appendChild(badge);
+        tr.appendChild(budgetTd);
+        if (canEdit) {
+          var opTd = document.createElement('td');
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-primary btn-sm';
+          btn.setAttribute('data-adopt-plan', String(index));
+          btn.setAttribute('data-plan-ai-id', lastResultAiTaskId || currentAiId || '');
+          btn.textContent = '采用该方案';
+          opTd.appendChild(btn);
+          tr.appendChild(opTd);
+        }
+        body.appendChild(tr);
+      });
+      wrap.hidden = false;
+    }
+
     function renderResult(rawData) {
       if (!rawData) { return; }
       var r = rawData.result || rawData;
       lastResultAiTaskId = r.ai_task_id ? str(r.ai_task_id) : (currentAiId || '');
       var structured = parseMaybeJson(r.structured, {}) || {};
       var lineItems = Array.isArray(structured.line_items) ? structured.line_items : [];
+      renderPlans(structured.plans, structured);
       var basisRefs = parseMaybeJson(r.basis_refs, []) || [];
       if (!Array.isArray(basisRefs)) { basisRefs = []; }
       var uncertain = Array.isArray(r.uncertain_items) ? r.uncertain_items : [];
@@ -1085,7 +1139,7 @@
         section.setAttribute('data-result-ai-id', lastResultAiTaskId || currentAiId || '');
       }
       var adopt = el('btn-adopt-ai');
-      if (adopt && canEdit) { adopt.hidden = false; }
+      if (adopt && canEdit && (!Array.isArray(structured.plans) || !structured.plans.length)) { adopt.hidden = false; }
       var refresh = el('btn-result-refresh');
       if (refresh) { refresh.hidden = false; }
     }
@@ -1398,6 +1452,31 @@
           }
         });
       }
+
+      document.addEventListener('click', async function (event) {
+        var origin = event.target;
+        if (!origin || typeof origin.closest !== 'function') { return; }
+        var planBtn = origin.closest('[data-adopt-plan]');
+        if (!planBtn) { return; }
+        var index = Number(planBtn.getAttribute('data-adopt-plan'));
+        var aiId = str(planBtn.getAttribute('data-plan-ai-id')) || lastResultAiTaskId || currentAiId;
+        if (!aiId || !isFinite(index) || index < 0) {
+          toast('方案数据未就绪，请刷新结果后重试', 'warn');
+          return;
+        }
+        planBtn.disabled = true;
+        try {
+          await apiFetch('/api/business-tasks/' + encodeURIComponent(taskId) + '/results', {
+            method: 'POST',
+            body: { ai_task_id: Number(aiId), plan_index: index, change_note: '采用方案 ' + (index + 1) }
+          });
+          flash('已采用方案，版本已生成', 'success');
+          window.setTimeout(function () { location.reload(); }, 350);
+        } catch (e) {
+          toast('采用方案失败：' + e.message, 'error', 7000);
+          planBtn.disabled = false;
+        }
+      });
 
       var adopt = el('btn-adopt-ai');
       if (adopt) {

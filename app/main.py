@@ -565,6 +565,100 @@ def task_new_page(request: Request, db: Session = Depends(get_db)):
     return _render(request, "task_new.html", _task_new_context(user, db))
 
 
+@app.get("/tasks/new-plan", include_in_schema=False)
+def task_new_plan_page(request: Request, db: Session = Depends(get_db)):
+    """方案模式：允许纸张/装订/工艺留白 + 预算，由 plan_candidates 枚举方案。"""
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    if user.get("role_code") != ROLE_OPERATOR:
+        return _message_page("无权限", "审核员不能创建业务任务，请使用业务操作员账号。", 403)
+    return _render(request, "task_new_plan.html", _task_new_context(user, db, plan_mode=True))
+
+
+@app.post("/tasks/create-plan", include_in_schema=False)
+async def task_create_plan_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    if user.get("role_code") != ROLE_OPERATOR:
+        return _message_page("无权限", "审核员不能创建业务任务，请使用业务操作员账号。", 403)
+    try:
+        form = await request.form()
+    except Exception:
+        form = {}
+
+    title = _form_value(form, "title")
+    goal = _form_value(form, "goal")
+    book_title = _form_value(form, "book_title")
+    book_format = _form_value(form, "format", "16开") or "16开"
+    print_sheet = _to_float(form.get("print_sheet"), 0)
+    qty = _to_int(form.get("qty"), 0)
+    color_pages = _to_int(form.get("color_pages"), 4)
+    budget_total = _to_float(form.get("budget_total"), 0)
+    paper_type = _form_value(form, "paper_type")
+    binding = _form_value(form, "binding")
+    process = _form_value(form, "process")
+    note = _form_value(form, "note")
+
+    errors: list[str] = []
+    if not title:
+        errors.append("任务标题不能为空")
+    if not goal:
+        errors.append("测算目标不能为空")
+    if book_format not in ("16开", "32开", "大32开"):
+        errors.append("开本无效")
+    if print_sheet <= 0 or print_sheet > 50:
+        errors.append("印张必须大于 0 且不超过 50")
+    if qty < 500:
+        errors.append("印数必须不低于 500 册")
+    if color_pages < 0 or color_pages > 4:
+        errors.append("色数档位必须在 0-4 之间")
+    if budget_total < 0:
+        errors.append("预算不能为负数")
+    if errors:
+        context = _task_new_context(user, db, plan_mode=True, error="；".join(errors), form_data=dict(form))
+        return _render(request, "task_new_plan.html", context, status_code=400)
+
+    params: dict = {
+        "book_title": book_title,
+        "format": book_format,
+        "print_sheet": print_sheet,
+        "qty": qty,
+        "color_pages": color_pages,
+    }
+    if paper_type:
+        params["paper_type"] = paper_type
+    if binding:
+        params["binding"] = binding
+    if process and process not in ("", "无"):
+        params["process"] = process
+    if note:
+        params["note"] = note
+    if budget_total > 0:
+        params["budget_total"] = budget_total
+
+    try:
+        task = task_service.create_task(
+            db,
+            user,
+            title=title,
+            goal=goal,
+            business_type="print_cost_plan",
+            params=params,
+        )
+    except StarletteHTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, dict) else {}
+        context = _task_new_context(
+            user, db, plan_mode=True,
+            error=str(detail.get("message") or "创建任务失败"),
+            form_data=dict(form),
+        )
+        return _render(request, "task_new_plan.html", context, status_code=exc.status_code)
+    logger.info("创建方案任务 task_id=%s user=%s", task.id, user.get("username"))
+    return _redirect(f"/tasks/{task.id}")
+
+
 @app.post("/tasks/create", include_in_schema=False)
 async def task_create_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request)

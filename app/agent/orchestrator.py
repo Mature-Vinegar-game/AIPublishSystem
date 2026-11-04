@@ -173,6 +173,8 @@ class _AgentState:
     fabricated_retry: int = 0
     calculation_ok: bool = False
     last_calc: dict[str, Any] | None = None
+    plan_mode: bool = False
+    last_plan: dict[str, Any] | None = None
 
     def counters(self, elapsed_ms: int | None = None) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -441,7 +443,9 @@ def run_ai_task(ai_task_id: int) -> None:
             {"role": "user", "content": build_user_prompt(snapshot)},
         ]
         limits = _limits()
+        plan_mode = str(getattr(task, "business_type", "") or "").strip() == "print_cost_plan"
         state = _AgentState(
+            plan_mode=plan_mode,
             messages=messages,
             client=LLMClient(
                 mode=_model_mode(),
@@ -501,7 +505,7 @@ def _agent_loop(
         state.model_calls += 1
         response = state.client.chat(
             state.messages,
-            tools=get_tool_schemas(),
+            tools=get_tool_schemas(plan_mode=state.plan_mode),
             tool_choice="auto",
         )
         _check_deadline(state)
@@ -540,6 +544,15 @@ def _agent_loop(
 
         # ---- 完成判定护栏：≥2 类工具各成功 ≥1，且 basis_refs 非空 ----
         basis_refs = _normalize_basis_refs(final_obj.get("basis_refs"))
+        # 方案模式：若模型漏写依据，用 plan_candidates 本次真实 source_ids 兜底，避免把有效方案判失败
+        if not basis_refs and state.plan_mode and state.last_plan and state.last_plan.get("ok"):
+            plan_ids = (state.last_plan.get("source") or {}).get("ids") or []
+            for sid in plan_ids:
+                sid = str(sid or "").strip()
+                if not sid:
+                    continue
+                ref_type = "rule" if sid.startswith("RULE-") else "material"
+                basis_refs.append({"type": ref_type, "id": sid, "label": sid})
         categories = state.distinct_types & COMPLETION_TYPES
         if len(categories) < 2 or not basis_refs:
             if state.evidence_retry < 1:
@@ -724,11 +737,15 @@ def _execute_tool_call(
                 state.calculation_ok = True
         if name == "calculate_cost":
             state.last_calc = result
+        if name == "plan_candidates" and result.get("ok"):
+            state.last_plan = result
         return _compact_tool_result(result)
 
-    # 1) 未知工具
+    # 1) 未知工具（方案工具只在方案模式可用）
     if name not in TOOL_HANDLERS:
         return finish(_tool_failure("TOOL_NOT_FOUND", f"未知工具：{name or '（空）'}"))
+    if name == "plan_candidates" and not state.plan_mode:
+        return finish(_tool_failure("TOOL_NOT_ALLOWED", "方案工具仅在方案模式（print_cost_plan）中可用"))
 
     # 2) 重复同参熔断
     try:
@@ -1078,6 +1095,28 @@ def _tool_missing_items(state: _AgentState) -> list[str]:
 
 
 def _fallback_content(structured: dict[str, Any], missing: list[str]) -> str:
+    plans = structured.get("plans") or []
+    if plans:
+        lines = ["## 方案模式：候选方案", ""]
+        budget = structured.get("budget_total")
+        if budget is not None:
+            lines.append(f"- 预算：{float(budget):.2f} 元；预算内可行：{'是' if structured.get('budget_feasible', True) else '否'}")
+        lines.append("")
+        lines.append("| 方案 | 纸张 | 装订 | 工艺 | 总成本（元） | 单册（元） | 是否在预算内 |")
+        lines.append("|---|---|---|---|---|---|---|")
+        for plan in plans:
+            lines.append(
+                "| {no} | {paper} | {binding} | {process} | {total:.2f} | {per:.2f} | {within} |".format(
+                    no=plan.get("plan_no", "—"),
+                    paper=plan.get("paper_type", "—"),
+                    binding=plan.get("binding", "—"),
+                    process=plan.get("process", "无"),
+                    total=float(plan.get("total") or 0),
+                    per=float(plan.get("per_copy") or 0),
+                    within="是" if plan.get("within_budget", True) else "否",
+                )
+            )
+        return "\n".join(lines)
     if structured.get("total") is not None:
         lines = [
             "## 印制成本测算结果",
@@ -1115,6 +1154,21 @@ def _save_result(
     state: _AgentState,
 ) -> None:
     structured = _normalize_structured(final_obj)
+
+    # 方案模式：以 plan_candidates 的真实计算结果为准，覆盖模型自由发挥的金额/明细
+    plan_mode = str((snapshot.get("business_task") or {}).get("business_type") or "") == "print_cost_plan"
+    plan_data = (state.last_plan or {}).get("data") if (state.plan_mode and state.last_plan and state.last_plan.get("ok")) else None
+    plans = (plan_data or {}).get("plans") if isinstance(plan_data, dict) else None
+    if plan_mode and isinstance(plans, list) and plans:
+        first = plans[0]
+        structured["plans"] = plans
+        structured["plan_mode"] = True
+        structured["budget_total"] = (plan_data or {}).get("budget_total")
+        structured["budget_feasible"] = bool((plan_data or {}).get("feasible", True))
+        structured["line_items"] = first.get("line_items") or []
+        structured["total"] = first.get("total")
+        structured["per_copy"] = first.get("per_copy")
+        structured["missing"] = []
 
     uncertain = _as_list(final_obj.get("uncertain_items"))
     uncertain += [item for item in _as_list(structured.get("uncertain")) if item not in uncertain]

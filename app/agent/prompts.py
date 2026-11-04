@@ -124,6 +124,29 @@ def build_user_prompt(snapshot: dict[str, Any] | None) -> str:
     lines.append(f"任务目标：{_fmt(task.get('goal'))}")
     lines.append("")
 
+    if str(task.get("business_type") or "") == "print_cost_plan":
+        lines.append("【方案模式要求】")
+        lines.append(
+            "- 本任务允许部分参数留白：format/print_sheet/qty 已确定；paper_type/binding/process 可为空，表示由系统从资料库推荐组合。"
+        )
+        lines.append(
+            "- 必须先调用 get_rules 读取规则；然后调用 plan_candidates，params 传已知参数（含 budget_total），budget_total 也可单独传。"
+        )
+        lines.append(
+            "- plan_candidates 内部已完成检索、规则校验与成本计算，调用后不要再调用 search_quotes / validate_spec / calculate_cost，"
+            "直接输出最终 JSON（get_rules 可在 plan_candidates 之前调用一次）。"
+        )
+        lines.append(
+            "- plan_candidates 会从资料库枚举纸张/装订/工艺组合，逐一校验并真实计算，返回 plans 数组；不得自行编造组合或价格，也不得假设未返回的组合可行。"
+        )
+        lines.append(
+            "- 最终 JSON 的 content_md 写方案对比与推荐理由；basis_refs 至少引用 plan_candidates 返回的 source_ids（material_no）；"
+            "structured 中的金额以 plan_candidates 返回为准，系统会保存 plans 供页面展示。"
+        )
+        lines.append(
+            "- 若预算内无可行方案，必须明确说明“预算内无合规方案”、最接近方案及差额，不得声称满足预算。"
+        )
+        lines.append("")
     lines.append("【任务参数 JSON】")
     lines.append(json.dumps(params, ensure_ascii=False, indent=2))
     lines.append("")

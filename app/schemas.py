@@ -65,6 +65,7 @@ class ResultCreateRequest(_Base):
     structured: Optional[Dict[str, Any]] = None
     change_note: Optional[str] = Field(default=None, max_length=500)
     ai_task_id: Optional[int] = Field(default=None, ge=1, description="采用某次 AI 结果时传入")
+    plan_index: Optional[int] = Field(default=None, ge=0, description="方案模式采用第 N 个方案（0 起）时传入")
 
 
 class SubmitRequest(_Base):

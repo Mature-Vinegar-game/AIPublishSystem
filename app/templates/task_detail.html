@@ -28,6 +28,7 @@
 {% set result = ai_result or latest_result or (t.latest_result if t else none) %}
 {% set structured = (result.structured|default({}, true) or {}) if result else {} %}
 {% set line_items = structured.line_items|default([], true) or [] %}
+{% set plans = structured.plans|default([], true) or [] %}
 {% set total = structured.total|default(none) %}
 {% set per_copy = structured.per_copy|default(none) %}
 {% set basis_refs = (result.basis_refs|default([], true) or []) if result else [] %}
@@ -147,7 +148,7 @@
         <div class="meta-item"><span class="meta-label">创建人</span><span class="meta-value">{{ t.created_by_name|default(t.created_by|default('—')) }}</span></div>
         <div class="meta-item"><span class="meta-label">创建时间</span><span class="meta-value">{{ t.created_at|default('—') }}</span></div>
         <div class="meta-item"><span class="meta-label">更新时间</span><span class="meta-value">{{ t.updated_at|default('—') }}</span></div>
-        <div class="meta-item"><span class="meta-label">业务类型</span><span class="meta-value">{{ t.business_type|default('print_cost') }}</span></div>
+        <div class="meta-item"><span class="meta-label">业务类型</span><span class="meta-value">{{ t.business_type|default('print_cost') }}{% if t.business_type == 'print_cost_plan' %} <span class="badge badge-blue">方案模式</span>{% endif %}</span></div>
       </div>
 
       <div class="section-divider"></div>
@@ -394,7 +395,7 @@
           {% if not result %}依据未校验{% elif basis_ok is none %}依据未校验{% elif basis_ok|string in ['1', 'true', 'True', 'yes'] %}依据校验通过{% else %}依据存在不确定{% endif %}
         </span>
         <button class="btn btn-ghost btn-sm" type="button" id="btn-result-refresh"{% if not ai_id %} hidden{% endif %}>刷新结果</button>
-        {% if allow_edit %}<button class="btn btn-ghost btn-sm" type="button" id="btn-adopt-ai"{% if not result %} hidden{% endif %}>采用此结果</button>{% endif %}
+        {% if allow_edit and not plans %}<button class="btn btn-ghost btn-sm" type="button" id="btn-adopt-ai"{% if not result %} hidden{% endif %}>采用此结果</button>{% endif %}
       </div>
     </div>
     <div class="card-body">
@@ -422,6 +423,42 @@
             <div class="total-note">金额单位为人民币元；明细公式可用于人工复算。</div>
           </aside>
         </div>
+
+{% if t.business_type == 'print_cost_plan' %}
+        <div id="result-plans-wrap"{% if not plans %} hidden{% endif %}>
+          <h3 class="sub-title">候选方案 <span class="count-pill" id="result-plans-count">{{ plans|length }}</span>
+            <span class="muted small" id="result-plan-budget">{% if structured.get('budget_total') is not none %}预算 {{ "%.2f"|format(structured.get('budget_total')) }} 元{% endif %}</span>
+          </h3>
+          <div class="table-wrap">
+            <table class="data-table compact">
+              <thead>
+                <tr>
+                  <th class="nowrap">#</th><th>纸张</th><th>装订</th><th>工艺</th>
+                  <th class="text-right nowrap">总成本（元）</th><th class="text-right nowrap">单册（元）</th>
+                  <th class="nowrap">预算</th>{% if allow_edit %}<th>操作</th>{% endif %}
+                </tr>
+              </thead>
+              <tbody id="result-plans-body">
+                {% for plan in plans %}
+                <tr>
+                  <td class="mono">{{ plan.plan_no|default(loop.index) }}</td>
+                  <td>{{ plan.paper_type|default('—') }}</td>
+                  <td>{{ plan.binding|default('—') }}</td>
+                  <td>{{ plan.process|default('无') }}</td>
+                  <td class="text-right mono">{% if plan.total is number %}{{ "%.2f"|format(plan.total) }}{% else %}—{% endif %}</td>
+                  <td class="text-right mono">{% if plan.per_copy is number %}{{ "%.2f"|format(plan.per_copy) }}{% else %}—{% endif %}</td>
+                  <td>{% if plan.within_budget is sameas false %}<span class="badge badge-amber">超预算</span>{% else %}<span class="badge badge-green">预算内</span>{% endif %}</td>
+                  {% if allow_edit %}
+                  <td><button class="btn btn-primary btn-sm" type="button" data-adopt-plan="{{ loop.index0 }}" data-plan-ai-id="{{ result.ai_task_id|default(ai_id) }}">采用该方案</button></td>
+                  {% endif %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted small" id="result-plans-note">方案金额由 plan_candidates 从资料库真实计算；采用后生成版本，可继续提交审核。</p>
+        </div>
+        {% endif %}
 
         <h3 class="sub-title">成本明细</h3>
         <div class="table-wrap">

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}新建方案任务 · 印制参数校验与成本测算 AI 系统{% endblock %}
+
+{% block content %}
+{% set err = error|default('') or (request.query_params.get('error', '') if request else '') %}
+{% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
+{% set f = form_data if form_data is defined and form_data else (form if form is defined and form else (values if values is defined and values else {})) %}
+{% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
+{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装', '锁线胶装', '线圈装'] %}
+{% set process_opts = process_options if process_options is defined and process_options else ['覆膜', 'UV', '烫金', '压纹', '击凸', '烫银'] %}
+{% set paper_opts = paper_types if paper_types is defined and paper_types else [] %}
+{% set fact = f.format|default('16开') %}
+{% set fbind = f.binding|default('') %}
+{% set fproc = f.process|default('') %}
+
+<div class="page-head">
+  <div>
+    <h1 class="page-title">新建方案任务（参数可留白）</h1>
+    <p class="page-sub">确定开本/印张/印数等基础参数，纸张、装订、工艺可留空；AI 会从资料库枚举组合并真实计算，按预算给出候选方案。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/tasks/new">← 标准任务</a>
+    <a class="btn btn-ghost" href="/tasks">返回任务列表</a>
+  </div>
+</div>
+
+{% if err %}
+<div class="notice notice-danger" role="alert">保存失败：{{ err }}</div>
+{% endif %}
+{% if msg %}
+<div class="notice notice-success" role="status">{{ msg }}</div>
+{% endif %}
+
+<div class="notice notice-info" role="note">
+  <b>方案模式说明：</b>纸张/装订/工艺留空 = 由系统从资料库推荐；预算留空 = 不按预算过滤。
+  系统会枚举有限组合（<b>最多 24 个候选</b>）逐个做规则校验与成本计算，返回最多 3 个可行方案（含预算内/最接近方案），不会让模型猜测价格。
+</div>
+
+<div class="form-layout">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">任务信息与基础参数</h2>
+      <span class="hint"><span class="req">*</span> 为必填项；其余留白由系统推荐</span>
+    </div>
+
+    <form method="post" action="/tasks/create-plan">
+      <div class="form-grid">
+        <div class="field span-2">
+          <label for="title">任务标题 <span class="req">*</span></label>
+          <input id="title" name="title" type="text" required maxlength="100"
+                 value="{{ f.title|default('') }}" placeholder="如：2026 秋季教辅印制方案（预算 1.5 万）">
+        </div>
+
+        <div class="field span-2">
+          <label for="goal">测算目标 / 业务要求 <span class="req">*</span></label>
+          <textarea id="goal" name="goal" rows="3" required maxlength="500"
+                    placeholder="可自由描述，如：客户预算 15000 元，16 开教辅 3000 册，正文纸张未定，封面希望覆膜，请给出 2-3 个可行方案。">{{ f.goal|default('') }}</textarea>
+        </div>
+
+        <div class="field">
+          <label for="book_title">书名</label>
+          <input id="book_title" name="book_title" type="text" maxlength="100"
+                 value="{{ f.book_title|default('') }}" placeholder="如：八年级语文阅读训练">
+        </div>
+
+        <div class="field">
+          <label for="format">开本 <span class="req">*</span></label>
+          <select id="format" name="format" required>
+            {% for opt in format_opts %}
+            <option value="{{ opt }}"{% if fact == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="print_sheet">印张 <span class="req">*</span></label>
+          <input id="print_sheet" name="print_sheet" type="number" required min="0.5" max="50" step="0.5"
+                 value="{{ f.print_sheet|default('') }}" placeholder="0.5 ~ 50，如 12">
+        </div>
+
+        <div class="field">
+          <label for="qty">印数（册） <span class="req">*</span></label>
+          <input id="qty" name="qty" type="number" required min="500" step="1"
+                 value="{{ f.qty|default(3000) }}" placeholder="≥500，如 3000">
+        </div>
+
+        <div class="field">
+          <label for="color_pages">色数档位</label>
+          <select id="color_pages" name="color_pages">
+            {% set fc = (f.color_pages|default(4))|string %}
+            <option value="0"{% if fc == '0' %} selected{% endif %}>0（单色）</option>
+            <option value="1"{% if fc == '1' %} selected{% endif %}>1</option>
+            <option value="2"{% if fc == '2' %} selected{% endif %}>2</option>
+            <option value="3"{% if fc == '3' %} selected{% endif %}>3</option>
+            <option value="4"{% if fc == '4' %} selected{% endif %}>4（四色）</option>
+          </select>
+          <div class="field-hint">0 单色；&gt;0 按四色档计印刷/制版费。方案模式不再枚举色数，按此值计算。</div>
+        </div>
+
+        <div class="field">
+          <label for="budget_total">总预算（元）</label>
+          <input id="budget_total" name="budget_total" type="number" min="0" step="1"
+                 value="{{ f.budget_total|default('') }}" placeholder="如 15000；留空=不按预算过滤">
+          <div class="field-hint">预算用于过滤方案；预算内无方案时会给出最接近方案和差额。</div>
+        </div>
+
+        <div class="field">
+          <label for="paper_type">纸张（可留白）</label>
+          <input id="paper_type" name="paper_type" type="text" maxlength="50" list="paper-suggestions"
+                 value="{{ f.paper_type|default('') }}" placeholder="留空=由系统推荐；也可指定如 胶版纸80g">
+          <datalist id="paper-suggestions">
+            {% for paper in paper_opts %}<option value="{{ paper }}"></option>{% endfor %}
+          </datalist>
+        </div>
+
+        <div class="field">
+          <label for="binding">装订方式（可留白）</label>
+          <select id="binding" name="binding">
+            <option value=""{% if not fbind %} selected{% endif %}>由系统推荐</option>
+            {% for opt in binding_opts %}
+            <option value="{{ opt }}"{% if fbind == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="process">表面工艺（可留白）</label>
+          <select id="process" name="process">
+            <option value=""{% if not fproc %} selected{% endif %}>由系统推荐（含无工艺）</option>
+            {% for opt in process_opts %}
+            <option value="{{ opt }}"{% if fproc == opt %} selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field span-2">
+          <label for="note">备注</label>
+          <textarea id="note" name="note" rows="2" maxlength="500"
+                    placeholder="如：客户要求 5 天内交片；封面希望覆膜；预算含税。">{{ f.note|default('') }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">创建方案任务</button>
+        <a class="btn btn-ghost" href="/tasks">取消</a>
+        <span class="hint form-actions-hint">创建后进入任务详情，点击“运行 AI 测算”生成候选方案。</span>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <div class="card-header">
+      <h2 class="card-title">方案模式怎么跑</h2>
+    </div>
+    <div class="side-body">
+      <ol class="step-list">
+        <li>确定开本 / 印张 / 印数 / 色数（基础参数）</li>
+        <li>纸张、装订、工艺可留空（系统推荐）</li>
+        <li>填预算（可选）；备注写业务偏好</li>
+        <li>运行 AI：先读规则，再由 <code>plan_candidates</code> 枚举组合、真实校验与计算</li>
+        <li>结果页出现候选方案表，选一个“采用该方案”生成版本</li>
+        <li>提交审核 → 审核员通过/退回（与标准任务一致）</li>
+      </ol>
+      <h3 class="side-title">示例</h3>
+      <p class="muted small">16开 / 12印张 / 3000册 / 四色；纸张、装订留空；预算 15000 元 → 预计给出 3 个可行方案（如 14098 / 14638 / 14828 元）。</p>
+      <h3 class="side-title">规则与资料</h3>
+      <p class="muted small">方案只从<b>已启用</b>资料库取值；装订/工艺组合必须通过规则库校验；模型不猜价格，候选金额由后端计算。</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
