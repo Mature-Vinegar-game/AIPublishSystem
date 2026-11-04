@@ -235,6 +235,7 @@ python -m pytest tests -q
 
 ## 12. 演示与自检（11/6 现场验收）
 
+- **提交前一键**：`python scripts/final_submit.py`（自检 → 重新打包 → 输出提交信息 `提交信息_YYYYMMDD.txt`）
 - **演示前一键自检**：`python scripts/demo_check.py`（真实模式 / Key / 限额 / 演示任务 / 交付材料，共 21 项；返回 0 表示全部通过）。
 - **预置演示任务**（任务列表搜索标题即可）：
   | 任务 | 编号 / id | 状态 | 用途 |
