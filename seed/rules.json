@@ -9,7 +9,11 @@
     "content": {
       "field": "format",
       "type": "enum",
-      "allowed": ["16开", "32开", "大32开"],
+      "allowed": [
+        "16开",
+        "32开",
+        "大32开"
+      ],
       "message": "开本必须为 16开、32开 或 大32开，其他开本需走特殊审批",
       "description": "开本决定印张与装订方式的匹配关系"
     }
@@ -83,7 +87,13 @@
     "content": {
       "field": "binding",
       "type": "enum",
-      "allowed": ["胶装", "骑马订", "精装"],
+      "allowed": [
+        "胶装",
+        "骑马订",
+        "精装",
+        "锁线胶装",
+        "线圈装"
+      ],
       "message": "装订方式必须为 胶装、骑马订 或 精装"
     }
   },
@@ -97,7 +107,9 @@
     "content": {
       "field": "binding",
       "type": "dependency",
-      "when": {"binding": "骑马订"},
+      "when": {
+        "binding": "骑马订"
+      },
       "max_print_sheet": 8,
       "message": "骑马订最多 8 印张，超过请改胶装",
       "description": "骑马订页数过多会掉页、影响装订质量"
@@ -113,7 +125,9 @@
     "content": {
       "field": "binding",
       "type": "dependency",
-      "when": {"binding": "精装"},
+      "when": {
+        "binding": "精装"
+      },
       "min_print_sheet": 4,
       "message": "精装书建议不少于 4 印张，过薄影响成书效果",
       "description": "精装工序成本较高，薄本建议改用胶装"
@@ -178,7 +192,15 @@
     "content": {
       "field": "process",
       "type": "enum",
-      "allowed": ["", "覆膜", "UV", "烫金"],
+      "allowed": [
+        "",
+        "覆膜",
+        "UV",
+        "烫金",
+        "压纹",
+        "击凸",
+        "烫银"
+      ],
       "message": "工艺可为空，或为 覆膜、UV、烫金 之一"
     }
   },
@@ -191,7 +213,14 @@
     "source": "出版印制业务规则（模拟数据，2026-11-01）",
     "content": {
       "type": "required",
-      "fields": ["format", "print_sheet", "qty", "paper_type", "binding", "color_pages"],
+      "fields": [
+        "format",
+        "print_sheet",
+        "qty",
+        "paper_type",
+        "binding",
+        "color_pages"
+      ],
       "message": "开本、印张、印数、纸张、装订、色数均为必填参数"
     }
   },
@@ -204,7 +233,10 @@
     "source": "出版印制业务规则（模拟数据，2026-11-01）",
     "content": {
       "type": "evidence",
-      "must_call_tools": ["search_quotes", "get_rules"],
+      "must_call_tools": [
+        "search_quotes",
+        "get_rules"
+      ],
       "sources": [
         "materials(type=paper)",
         "materials(type=binding)",
@@ -224,14 +256,146 @@
     "content": {
       "type": "formula",
       "items": [
-        {"name": "用纸量(令)", "formula": "ceil(qty × print_sheet ÷ 1000 × 1.05)"},
-        {"name": "纸张费", "formula": "用纸量 × price_per_ream"},
-        {"name": "印刷费", "formula": "qty ÷ 1000 × print_sheet × 千印张价 × 色数档"},
-        {"name": "制版费", "formula": "色数档 × 80 元/色"},
-        {"name": "装订费", "formula": "qty ÷ 1000 × price_per_1000"},
-        {"name": "工艺费", "formula": "qty ÷ 1000 × price_per_1000（无工艺为 0）"}
+        {
+          "name": "用纸量(令)",
+          "formula": "ceil(qty × print_sheet ÷ 1000 × 1.05)"
+        },
+        {
+          "name": "纸张费",
+          "formula": "用纸量 × price_per_ream"
+        },
+        {
+          "name": "印刷费",
+          "formula": "qty ÷ 1000 × print_sheet × 千印张价 × 色数档"
+        },
+        {
+          "name": "制版费",
+          "formula": "色数档 × 80 元/色"
+        },
+        {
+          "name": "装订费",
+          "formula": "qty ÷ 1000 × price_per_1000"
+        },
+        {
+          "name": "工艺费",
+          "formula": "qty ÷ 1000 × price_per_1000（无工艺为 0）"
+        }
       ],
       "message": "总成本 = 纸张费 + 印刷费 + 制版费 + 装订费 + 工艺费；单册成本 = 总成本 ÷ 印数"
+    }
+  },
+  {
+    "rule_code": "RULE-QTY-016",
+    "name": "印数上限 50000 册",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "qty",
+      "type": "range",
+      "max": 50000,
+      "message": "印数超过 50000 册，建议分批印刷或单独议价",
+      "description": "超大批量按单次排产测算误差大"
+    }
+  },
+  {
+    "rule_code": "RULE-QTY-017",
+    "name": "印数低于 1000 册提示",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "qty",
+      "type": "range",
+      "min": 1000,
+      "message": "印数低于 1000 册，固定成本摊薄不足，建议数码印刷或提高印数",
+      "description": "成本测算公式按千册摊薄"
+    }
+  },
+  {
+    "rule_code": "RULE-SHEET-018",
+    "name": "印张超过 40 提示分册",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "print_sheet",
+      "type": "range",
+      "max": 40,
+      "message": "印张超过 40，建议拆分为多册或确认装订能力",
+      "description": "常规胶装/锁线单册过厚易散页"
+    }
+  },
+  {
+    "rule_code": "RULE-SHEET-019",
+    "name": "印张低于 2 提示薄本",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "print_sheet",
+      "type": "range",
+      "min": 2,
+      "message": "印张低于 2 的薄本建议骑马订或数码印刷",
+      "description": "薄本胶装成本不经济"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-019",
+    "name": "锁线胶装建议不少于 6 印张",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "dependency",
+      "when": {
+        "binding": "锁线胶装"
+      },
+      "min_print_sheet": 6,
+      "message": "锁线胶装建议不少于 6 印张，过薄可选择胶装/骑马订",
+      "description": "锁线工序适合有一定厚度的书刊"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-020",
+    "name": "线圈装印张上限 10",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "error",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "dependency",
+      "when": {
+        "binding": "线圈装"
+      },
+      "max_print_sheet": 10,
+      "message": "线圈装最多 10 印张，超过请改胶装/锁线胶装",
+      "description": "线圈装订过厚易变形、成本高"
+    }
+  },
+  {
+    "rule_code": "RULE-BIND-021",
+    "name": "胶装建议不少于 6 印张",
+    "business_type": "print_cost",
+    "rule_type": "spec",
+    "severity": "warning",
+    "source": "出版印制业务规则（模拟数据，2026-11-01）",
+    "content": {
+      "field": "binding",
+      "type": "dependency",
+      "when": {
+        "binding": "胶装"
+      },
+      "min_print_sheet": 6,
+      "message": "胶装建议不少于 6 印张，过薄建议骑马订",
+      "description": "胶装薄本书脊成型效果差"
     }
   }
 ]

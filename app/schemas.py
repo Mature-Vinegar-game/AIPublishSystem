@@ -96,6 +96,16 @@ class MaterialUpdateRequest(_Base):
     source: Optional[str] = Field(default=None, max_length=200)
 
 
+class RuleUpdateRequest(_Base):
+    """规则更新：启用/停用、名称、来源、严重级别、内容（operator）。"""
+
+    enabled: Optional[bool] = Field(default=None, description="true=启用，false=停用")
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    source: Optional[str] = Field(default=None, max_length=200)
+    severity: Optional[str] = Field(default=None, max_length=16)
+    content: Optional[Any] = None
+
+
 class RuleCreateRequest(_Base):
     rule_code: str = Field(..., min_length=1, max_length=64)
     name: str = Field(..., min_length=1, max_length=200)
@@ -117,4 +127,5 @@ __all__ = [
     "MaterialCreateRequest",
     "MaterialUpdateRequest",
     "RuleCreateRequest",
+    "RuleUpdateRequest",
 ]

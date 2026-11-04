@@ -14,7 +14,7 @@ from app.api import api_error, success
 from app.auth import require_operator, require_user
 from app.db import get_db, now_iso
 from app.models import Rule
-from app.schemas import RuleCreateRequest
+from app.schemas import RuleCreateRequest, RuleUpdateRequest
 from app.services import basis_service
 
 logger = logging.getLogger(__name__)
@@ -133,4 +133,44 @@ def get_rule(
     rule = db.query(Rule).filter(Rule.id == int(rule_id)).first()
     if rule is None:
         api_error(404, "规则不存在")
+    return success(_rule_to_dict(rule))
+
+
+
+@router.patch("/{rule_id}", summary="更新规则：启用/停用/名称/来源/严重级别/内容（operator）")
+def update_rule(
+    rule_id: int,
+    payload: RuleUpdateRequest,
+    user: dict = Depends(require_operator),
+    db: Session = Depends(get_db),
+):
+    """停用规则后，后续 AI 校验不再应用该规则；历史结果与执行记录仍保留原规则 ID（可追溯）。"""
+    rule = db.query(Rule).filter(Rule.id == int(rule_id)).first()
+    if rule is None:
+        api_error(404, "规则不存在")
+    if payload.enabled is not None:
+        rule.enabled = 1 if payload.enabled else 0
+    if payload.name is not None:
+        rule.name = payload.name.strip()
+    if payload.source is not None:
+        rule.source = payload.source.strip() or rule.source
+    if payload.severity is not None:
+        severity = payload.severity.strip().lower()
+        if severity not in SEVERITIES:
+            api_error(400, f"severity 非法，只能是 {', '.join(SEVERITIES)}")
+        rule.severity = severity
+    if payload.content is not None:
+        content = payload.content
+        if isinstance(content, str):
+            parsed = basis_service.parse_json(content, None)
+            if not isinstance(parsed, (dict, list)):
+                api_error(400, "content 必须是 JSON 对象")
+            content = parsed
+        if not isinstance(content, (dict, list)):
+            api_error(400, "content 必须是 JSON 对象")
+        rule.content_json = basis_service.dump_json(content, "{}")
+    db.commit()
+    db.refresh(rule)
+    logger.info("更新规则 rule_id=%s rule_code=%s enabled=%s user=%s",
+                rule.id, rule.rule_code, rule.enabled, user.get("username"))
     return success(_rule_to_dict(rule))

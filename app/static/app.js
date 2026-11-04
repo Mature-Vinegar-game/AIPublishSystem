@@ -1538,6 +1538,29 @@
 
   /* ---------------- 资料启停（T06 演示：停用被引用资料 → 提交审核依据失效） ---------------- */
 
+  function initRuleToggle() {
+    var buttons = document.querySelectorAll('[data-toggle-rule]');
+    Array.prototype.forEach.call(buttons, function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-toggle-rule');
+        var enabled = btn.getAttribute('data-rule-enabled') === '1';
+        var next = !enabled;
+        if (!next && !window.confirm('停用后该规则不再参与后续 AI 校验（历史结果与执行记录仍保留规则 ID）。确认停用？')) {
+          return;
+        }
+        btn.disabled = true;
+        try {
+          await apiFetch('/api/rules/' + encodeURIComponent(id), { method: 'PATCH', body: { enabled: next } });
+          toast('规则已' + (next ? '启用' : '停用'), 'success');
+          window.setTimeout(function () { location.reload(); }, 600);
+        } catch (e) {
+          toast(e.message || '操作失败', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
   function initMaterialToggle() {
     var buttons = document.querySelectorAll('[data-toggle-material]');
     Array.prototype.forEach.call(buttons, function (btn) {
@@ -1573,6 +1596,7 @@
     initTaskCreateForm();
     initLoginForm();
     initMaterialToggle();
+    initRuleToggle();
 
     document.addEventListener('click', function (event) {
       var origin = event.target;

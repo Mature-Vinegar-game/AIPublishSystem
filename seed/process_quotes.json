@@ -83,5 +83,65 @@
       "unit": "元/千印张·色",
       "note": "四色按 4 个色档计；制版费 80 元/色（demo 口径）"
     }
+  },
+  {
+    "material_no": "PROC-004",
+    "type": "process",
+    "title": "压纹",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 260.0,
+      "unit": "元/千册",
+      "note": "封面压纹，按千册计价"
+    }
+  },
+  {
+    "material_no": "PROC-005",
+    "type": "process",
+    "title": "击凸",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 300.0,
+      "unit": "元/千册",
+      "note": "封面击凸，按千册计价"
+    }
+  },
+  {
+    "material_no": "PROC-006",
+    "type": "process",
+    "title": "烫银",
+    "source": "2026 年印后工艺报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 320.0,
+      "unit": "元/千册",
+      "note": "封面烫银，按千册计价"
+    }
+  },
+  {
+    "material_no": "BIND-004",
+    "type": "binding",
+    "title": "锁线胶装",
+    "source": "2026 年装订报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 260.0,
+      "unit": "元/千册",
+      "note": "锁线+胶装，适合 6 印张以上厚本/精装内芯"
+    }
+  },
+  {
+    "material_no": "BIND-005",
+    "type": "binding",
+    "title": "线圈装",
+    "source": "2026 年装订报价单（模拟数据，仅用于演示）",
+    "version_no": 1,
+    "content": {
+      "price_per_1000": 200.0,
+      "unit": "元/千册",
+      "note": "线圈装订，适合手册/台历，10 印张以内"
+    }
   }
 ]

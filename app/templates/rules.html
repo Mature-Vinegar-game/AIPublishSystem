@@ -80,6 +80,14 @@
               {% else %}
               <span class="badge badge-gray">停用</span>
               {% endif %}
+              {% if is_operator %}
+              <button class="btn btn-ghost btn-sm" type="button"
+                      data-toggle-rule="{{ r.id }}"
+                      data-rule-enabled="{{ '1' if en|string in ['1', 'true', 'True', 'enabled'] else '0' }}"
+                      title="停用后该规则不再参与后续 AI 校验；历史结果仍保留规则 ID">
+                {{ '停用' if en|string in ['1', 'true', 'True', 'enabled'] else '启用' }}
+              </button>
+              {% endif %}
             </td>
             <td>
               {% set rj = r.content|default(r.content_json|default({})) %}

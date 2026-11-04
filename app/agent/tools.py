@@ -34,7 +34,7 @@ from app.models import Material, Rule
 
 QUOTE_TYPES = ("paper", "process", "binding", "rate")
 VALID_FORMATS = ("16开", "32开", "大32开")
-VALID_BINDINGS = ("胶装", "骑马订", "精装")
+VALID_BINDINGS = ("胶装", "骑马订", "精装", "锁线胶装", "线圈装")
 TYPE_LABELS = {
     "paper": "纸张",
     "process": "工艺",

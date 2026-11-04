@@ -127,6 +127,7 @@
         <div class="field">
           <label for="process">表面工艺</label>
           <select id="process" name="process">
+            <option value=""{% if not fproc %} selected{% endif %}>无（不选工艺）</option>
             {% for opt in process_opts %}
             <option value="{{ opt }}"{% if fproc == opt %} selected{% endif %}>{{ opt }}</option>
             {% endfor %}
