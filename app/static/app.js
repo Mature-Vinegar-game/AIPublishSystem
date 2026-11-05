@@ -539,6 +539,13 @@
     var form = el('task-create-form');
     if (!form) { return; }
 
+    // 装订白名单以页面下拉选项为准（资料库新增装订方式后无需再改 JS）
+    var bindingNode = el('binding');
+    var allowedBindings = bindingNode
+      ? Array.prototype.map.call(bindingNode.options, function (opt) { return opt.value; }).filter(function (v) { return v; })
+      : ['胶装', '骑马订', '精装'];
+    if (!allowedBindings.length) { allowedBindings = ['胶装', '骑马订', '精装']; }
+
     var rules = [
       { id: 'title', message: '请填写任务标题', test: function (v) { return str(v).trim().length > 0; } },
       { id: 'goal', message: '请填写测算目标', test: function (v) { return str(v).trim().length > 0; } },
@@ -556,7 +563,7 @@
         }
       },
       { id: 'paper_type', message: '请填写纸张名称（如：铜版纸157g）', test: function (v) { return str(v).trim().length > 0; } },
-      { id: 'binding', message: '请选择装订方式', test: function (v) { return ['胶装', '骑马订', '精装'].indexOf(str(v)) !== -1; } }
+      { id: 'binding', message: '请选择装订方式', test: function (v) { return allowedBindings.indexOf(str(v)) !== -1; } }
     ];
 
     function applyRule(rule) {

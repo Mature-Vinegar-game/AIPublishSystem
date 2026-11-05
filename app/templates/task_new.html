@@ -6,7 +6,7 @@
 {% set msg = message|default('') or (request.query_params.get('msg', '') if request else '') %}
 {% set f = form_data if form_data is defined and form_data else (form if form is defined and form else (values if values is defined and values else {})) %}
 {% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
-{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装'] %}
+{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装', '锁线胶装', '线圈装'] %}
 {% set process_base = process_options if process_options is defined and process_options else ['覆膜', 'UV', '烫金'] %}
 {% set process_opts = ['无'] + process_base %}
 {% set paper_opts = paper_types if paper_types is defined and paper_types else ['铜版纸157g', '铜版纸128g', '胶版纸70g', '双胶纸80g', '轻型纸60g', '哑粉纸128g', '白卡纸250g'] %}
@@ -161,7 +161,7 @@
         <li>印张须 &gt;0 且 ≤50，支持 0.5 步进</li>
         <li>印数须为 ≥500 的整数</li>
         <li>纸张名称须能在资料库中匹配到报价</li>
-        <li>装订仅支持 <b>胶装 / 骑马订 / 精装</b></li>
+        <li>装订可选 <b>{{ binding_opts|join(" / ") }}</b>（由资料库提供）</li>
         <li>色数 0~4，单色/四色两档计价</li>
       </ul>
 

@@ -71,7 +71,7 @@
   ('process', '表面工艺'),
   ('note', '备注')
 ] %}
-{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装'] %}
+{% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装', '锁线胶装', '线圈装'] %}
 {% set process_opts = (['无'] + process_options) if process_options is defined and process_options else ['无', '覆膜', 'UV', '烫金'] %}
 {% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
 {% set sm = business_status.get(tstatus, ('未知', 'badge-gray')) %}
