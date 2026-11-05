@@ -412,6 +412,7 @@
         </span>
         <button class="btn btn-ghost btn-sm" type="button" id="btn-result-refresh"{% if not ai_id %} hidden{% endif %}>刷新结果</button>
         <button class="btn btn-ghost btn-sm" type="button" id="btn-export-result"{% if not result %} hidden{% endif %}>导出 Markdown</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-print-result"{% if not result %} hidden{% endif %}>打印结果</button>
         {% if allow_edit and not plans %}<button class="btn btn-ghost btn-sm" type="button" id="btn-adopt-ai"{% if not result %} hidden{% endif %}>采用此结果</button>{% endif %}
       </div>
     </div>

@@ -1183,3 +1183,11 @@ input[type="number"] { font-family: var(--mono); }
 .tool-call-cell { cursor: pointer; }
 .tool-call-cell:hover { background: #F1F5FA; }
 .tool-cell-hint { font-size: 11px; color: var(--primary-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }
+
+
+/* ---- 仪表盘趋势 ---- */
+.trend-table { display: flex; flex-direction: column; gap: 6px; }
+.trend-row { display: grid; grid-template-columns: 52px 32px minmax(80px, 1fr) 34px 24px minmax(80px, 1fr) 34px; align-items: center; gap: 8px; font-size: 12px; }
+.trend-date { font-family: var(--mono); color: var(--muted); }
+.trend-label { color: var(--muted); text-align: right; }
+.trend-row .bar-track { height: 8px; }

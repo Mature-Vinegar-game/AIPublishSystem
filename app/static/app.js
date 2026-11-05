@@ -1012,6 +1012,13 @@
         });
       }
 
+      var printBtn = el('btn-print-result');
+      if (printBtn) {
+        printBtn.addEventListener('click', function () {
+          window.print();
+        });
+      }
+
       var exportBtn = el('btn-export-result');
       if (exportBtn) {
         exportBtn.addEventListener('click', function () {

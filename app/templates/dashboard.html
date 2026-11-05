@@ -5,9 +5,12 @@
 <div class="page-head">
   <div>
     <h1 class="page-title">运行仪表盘</h1>
-    <p class="page-sub">任务、AI 运行、工具调用与审核情况总览（只读统计）。</p>
+    <p class="page-sub">任务、AI 运行、工具调用与审核情况总览（只读统计） · 当前范围：{{ d.range_label }}</p>
   </div>
   <div class="page-actions">
+    <a class="btn btn-ghost{% if d.days == 7 %} is-active{% endif %}" href="/dashboard?days=7">近 7 天</a>
+    <a class="btn btn-ghost{% if d.days == 30 %} is-active{% endif %}" href="/dashboard?days=30">近 30 天</a>
+    <a class="btn btn-ghost{% if d.days == 0 %} is-active{% endif %}" href="/dashboard?days=0">全部</a>
     <a class="btn btn-ghost" href="/tasks">任务列表</a>
     <a class="btn btn-ghost" href="/system">系统信息</a>
   </div>
@@ -96,6 +99,41 @@
             <td>{{ t.status_label }}</td>
             <td class="muted nowrap">{{ t.created_at }}</td>
           </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card card-wide">
+    <div class="card-header"><h2 class="card-title">每日趋势（近 {{ d.trend_items|length }} 天）</h2></div>
+    <div class="card-body">
+      <div class="trend-table">
+        {% for item in d.trend_items %}
+        <div class="trend-row">
+          <span class="trend-date">{{ item.date }}</span>
+          <span class="trend-label">任务</span>
+          <div class="bar-track"><span class="bar-fill" style="width: {{ item.task_pct }}%"></span></div>
+          <span class="bar-value">{{ item.tasks }}</span>
+          <span class="trend-label">AI</span>
+          <div class="bar-track"><span class="bar-fill bar-ok" style="width: {{ item.ai_pct }}%"></span></div>
+          <span class="bar-value">{{ item.ai }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">失败原因 Top</h2></div>
+    <div class="card-body table-wrap">
+      <table class="data-table compact">
+        <thead><tr><th>错误码</th><th class="text-right">次数</th></tr></thead>
+        <tbody>
+          {% for item in d.failure_items %}
+          <tr><td class="mono">{{ item.code }}</td><td class="text-right">{{ item.count }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="muted">当前范围内暂无失败记录</td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -470,15 +470,38 @@ def index():
 
 
 # ============================ 任务列表 ============================
-def _dashboard_context(user: Optional[dict], db: Session) -> dict:
+def _dashboard_context(user: Optional[dict], db: Session, days: int = 7) -> dict:
     """运行仪表盘：任务/AI/工具/版本/审核统计（只读）。"""
     from collections import Counter
 
-    tasks = db.query(BusinessTask).all()
-    ai_tasks = db.query(AiTask).all()
-    tool_calls = db.query(ToolCallRecord).all()
-    versions = db.query(ResultVersion).all()
-    reviews = db.query(ReviewRecord).all()
+    from datetime import datetime as _dt, timedelta as _td
+
+    all_tasks = db.query(BusinessTask).all()
+    all_ai = db.query(AiTask).all()
+    all_tool = db.query(ToolCallRecord).all()
+    all_versions = db.query(ResultVersion).all()
+    all_reviews = db.query(ReviewRecord).all()
+
+    days = int(days) if days is not None else 7
+    if days <= 0:
+        range_label = "全部时间"
+        trend_days = 14
+        cutoff_date = None
+    else:
+        range_label = f"近 {days} 天"
+        trend_days = days
+        cutoff_date = (_dt.now() - _td(days=days)).date().isoformat()
+
+    def _in_range(row) -> bool:
+        if cutoff_date is None:
+            return True
+        return str(getattr(row, "created_at", "") or "")[:10] >= cutoff_date
+
+    tasks = [row for row in all_tasks if _in_range(row)]
+    ai_tasks = [row for row in all_ai if _in_range(row)]
+    tool_calls = [row for row in all_tool if _in_range(row)]
+    versions = [row for row in all_versions if _in_range(row)]
+    reviews = [row for row in all_reviews if _in_range(row)]
 
     task_status_order = ["PENDING", "PENDING_REVIEW", "REJECTED", "COMPLETED"]
     task_counts = Counter(str(getattr(t, "status", "") or "") for t in tasks)
@@ -522,7 +545,7 @@ def _dashboard_context(user: Optional[dict], db: Session) -> dict:
                     source_counter[sid] += 1
     source_items = [{"id": sid, "count": count} for sid, count in source_counter.most_common(8)]
 
-    plan_tasks = [t for t in tasks if str(getattr(t, "business_type", "")) == "print_cost_plan"]
+    plan_tasks = [t for t in all_tasks if str(getattr(t, "business_type", "")) == "print_cost_plan"]
     recent = sorted(tasks, key=lambda t: str(getattr(t, "created_at", "") or ""), reverse=True)[:8]
     recent_items = [
         {
@@ -536,6 +559,31 @@ def _dashboard_context(user: Optional[dict], db: Session) -> dict:
         }
         for t in recent
     ]
+
+    # 失败原因分布
+    failure_counts = Counter(
+        str(getattr(ai, "error_code", "") or "UNKNOWN")
+        for ai in ai_tasks
+        if str(getattr(ai, "status", "")) == "FAILED"
+    )
+    failure_items = [{"code": code, "count": count} for code, count in failure_counts.most_common(8)]
+
+    # 每日趋势（任务创建 / AI 运行）
+    today = _dt.now().date()
+    dates = [today - _td(days=i) for i in range(trend_days - 1, -1, -1)]
+    task_day_counts = Counter(str(getattr(t, "created_at", "") or "")[:10] for t in all_tasks)
+    ai_day_counts = Counter(str(getattr(a, "created_at", "") or "")[:10] for a in all_ai)
+    trend_items = []
+    max_count = 1
+    for d in dates:
+        key = d.isoformat()
+        tcount = int(task_day_counts.get(key, 0))
+        acount = int(ai_day_counts.get(key, 0))
+        max_count = max(max_count, tcount, acount)
+        trend_items.append({"date": key[5:], "tasks": tcount, "ai": acount})
+    for item in trend_items:
+        item["task_pct"] = round(item["tasks"] * 100.0 / max_count, 1)
+        item["ai_pct"] = round(item["ai"] * 100.0 / max_count, 1)
 
     baseline = db.query(AiResult).filter(AiResult.business_task_id == 1).order_by(AiResult.id.desc()).first()
     baseline_data = {}
@@ -566,6 +614,10 @@ def _dashboard_context(user: Optional[dict], db: Session) -> dict:
             "plan_pending": sum(1 for t in plan_tasks if t.status == "PENDING"),
             "recent_items": recent_items,
             "baseline": baseline_data,
+            "range_label": range_label,
+            "days": days,
+            "trend_items": trend_items,
+            "failure_items": failure_items,
         },
     )
 
@@ -630,11 +682,11 @@ def evaluation_page(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard", include_in_schema=False)
-def dashboard_page(request: Request, db: Session = Depends(get_db)):
+def dashboard_page(request: Request, days: int = Query(default=7, ge=0, le=365), db: Session = Depends(get_db)):
     user = get_current_user(request)
     if user is None:
         return _login_redirect()
-    return _render(request, "dashboard.html", _dashboard_context(user, db))
+    return _render(request, "dashboard.html", _dashboard_context(user, db, days=days))
 
 
 @app.get("/tasks", include_in_schema=False)

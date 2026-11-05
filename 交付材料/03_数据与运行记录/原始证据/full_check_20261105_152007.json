@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-11-05T15:20:07",
+  "base": "http://127.0.0.1:8000",
+  "passed": 38,
+  "total": 38,
+  "results": [
+    {
+      "name": "未登录访问 /tasks 重定向登录",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "operator 登录",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "reviewer 登录",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /tasks",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /tasks/new",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /tasks/new-plan",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /materials",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /rules",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /validate",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /evaluation",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /dashboard",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /system",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "页面 /diagrams",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "仪表盘近 30 天",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "仪表盘全部时间",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "任务列表按总成本排序",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "任务列表关键词高亮标记",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "任务详情核心区块",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "详情结果金额 14638/4.88",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "详情 Markdown 数据源",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "工具执行记录可点击",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "导出/打印按钮",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "版本对比入口",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "版本对比页面",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "校验试算-合法参数通过",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "校验试算-骑马订 12 印张被规则拦截",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "效果评测 4/4 PASS",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "方案任务 /tasks/46",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "方案任务 /tasks/48",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "方案任务 /tasks/51",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "方案任务预算不足提示",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "按审核意见重跑入口（任务 54）",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "资料库 30 条",
+      "ok": true,
+      "detail": "{'binding': 5, 'paper': 18, 'process': 6, 'rate': 1}"
+    },
+    {
+      "name": "规则库 22 条",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "系统 meta real + key",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "限额 10/8/30/3000/120",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "reviewer 创建任务 403",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "name": "reviewer 运行/重试 AI 403",
+      "ok": true,
+      "detail": "403"
+    }
+  ]
+}
