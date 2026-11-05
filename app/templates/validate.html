@@ -9,7 +9,7 @@
 <div class="page-head">
   <div>
     <h1 class="page-title">校验试算</h1>
-    <p class="page-sub">不运行 AI，直接用规则库对参数做一次 dry-run 校验；适合核对规则是否按预期生效。</p>
+    <p class="page-sub">不运行 AI、不计算金额，直接用规则库对参数做一次 dry-run 校验；适合核对规则是否按预期生效。成本计算请到任务详情运行 AI 测算。</p>
   </div>
   <div class="page-actions">
     <a class="btn btn-ghost" href="/rules">规则库</a>
@@ -71,7 +71,7 @@
       <div class="form-actions">
         <button class="btn btn-primary" type="submit">执行校验</button>
         <a class="btn btn-ghost" href="/validate">重置</a>
-        <span class="hint form-actions-hint">校验直接调用 validate_spec；不写 AI 运行记录、不生成版本。</span>
+        <span class="hint form-actions-hint">校验直接调用 validate_spec：只判断参数合规，不计算成本、不写 AI 运行记录、不生成版本。</span>
       </div>
     </form>
   </div>
@@ -103,7 +103,7 @@
         {% endif %}
       {% else %}
       <p class="muted">填写参数并执行校验后，这里显示规则命中情况。</p>
-      <p class="muted small">可以直接用这个页面演示“规则库是独立可运营的”：新增/停用规则后，校验结果会变化。</p>
+      <p class="muted small">用途：① 新增/修改规则后验证是否生效；② 排查 AI 校验结果；③ 演示规则库可运营。它只做校验，不做成本计算。</p>
       {% endif %}
     </div>
   </aside>

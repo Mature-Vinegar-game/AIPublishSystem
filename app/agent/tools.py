@@ -345,19 +345,13 @@ def get_rules(business_type: str | None = None) -> dict[str, Any]:
     db = None
     try:
         db = _session()
+        # 业务规则 + 通用规则（common/空）一起返回；未来新增业务类型时只需增加对应规则
         rows = (
             db.query(Rule)
-            .filter(Rule.enabled == 1, Rule.business_type == business_type)
+            .filter(Rule.enabled == 1, Rule.business_type.in_((business_type, "common", "")))
             .order_by(Rule.id)
             .all()
         )
-        if not rows:
-            rows = (
-                db.query(Rule)
-                .filter(Rule.enabled == 1, Rule.business_type.in_(("common", "")))
-                .order_by(Rule.id)
-                .all()
-            )
         rules = [
             {
                 "rule_code": rule.rule_code,
@@ -580,7 +574,11 @@ def _apply_rule_content(
 def _query_spec_rules(db: Any) -> list[Any]:
     return (
         db.query(Rule)
-        .filter(Rule.enabled == 1, Rule.rule_type == "spec")
+        .filter(
+            Rule.enabled == 1,
+            Rule.rule_type == "spec",
+            Rule.business_type.in_(("print_cost", "common", "")),
+        )
         .order_by(Rule.id)
         .all()
     )

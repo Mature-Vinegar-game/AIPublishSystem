@@ -141,33 +141,36 @@
 
       <div class="field">
         <label for="rule-business">业务类型 <span class="req">*</span></label>
-        <input id="rule-business" name="business_type" type="text" required maxlength="50"
-               value="{{ f.business_type|default('print_cost') }}" placeholder="print_cost">
+        <select id="rule-business" name="business_type" required>
+          <option value="print_cost"{% if f.business_type|default('print_cost') == 'print_cost' %} selected{% endif %}>print_cost · 印制成本测算（当前业务）</option>
+          <option value="common"{% if f.business_type|default('') == 'common' %} selected{% endif %}>common · 通用规则</option>
+        </select>
+        <div class="field-hint">当前系统只有印制业务；common 为通用规则预留。新增业务类型时可在后端扩展。</div>
       </div>
 
       <div class="field">
         <label for="rule-type">规则类型 <span class="req">*</span></label>
-        <input id="rule-type" name="rule_type" type="text" required list="rule-type-options"
-               value="{{ f.rule_type|default('spec') }}" placeholder="spec">
-        <datalist id="rule-type-options">
-          <option value="spec">spec · 参数规格（validate_spec 使用）</option>
-          <option value="calc">calc · 计算口径</option>
-          <option value="data">data · 数据完整性</option>
-          <option value="policy">policy · 业务策略</option>
-        </datalist>
-        <div class="field-hint">校验工具读取 rule_type=spec 的规则。</div>
+        <select id="rule-type" name="rule_type" required>
+          {% set rt = f.rule_type|default('spec') %}
+          <option value="spec"{% if rt == 'spec' %} selected{% endif %}>spec · 参数规格（validate_spec 使用）</option>
+          <option value="calc"{% if rt == 'calc' %} selected{% endif %}>calc · 计算口径</option>
+          <option value="data"{% if rt == 'data' %} selected{% endif %}>data · 数据完整性</option>
+          <option value="policy"{% if rt == 'policy' %} selected{% endif %}>policy · 业务策略</option>
+        </select>
+        <div class="field-hint">校验试算与 AI 校验读取 rule_type=spec 的规则。</div>
       </div>
 
       <div class="field">
         <label for="rule-severity">严重级别</label>
-        <input id="rule-severity" name="severity" type="text" list="rule-severity-options"
-               value="{{ f.severity|default('warning') }}" placeholder="warning">
-        <datalist id="rule-severity-options">
-          <option value="error">error · 阻断</option>
-          <option value="warning">warning · 警告</option>
-          <option value="high">high · 高</option>
-          <option value="medium">medium · 中</option>
-        </datalist>
+        <select id="rule-severity" name="severity">
+          {% set sv = f.severity|default('warning') %}
+          <option value="error"{% if sv == 'error' %} selected{% endif %}>error · 阻断（校验不通过）</option>
+          <option value="warning"{% if sv == 'warning' %} selected{% endif %}>warning · 警告（提示确认）</option>
+          <option value="info"{% if sv == 'info' %} selected{% endif %}>info · 提示</option>
+          <option value="high"{% if sv == 'high' %} selected{% endif %}>high · 高</option>
+          <option value="medium"{% if sv == 'medium' %} selected{% endif %}>medium · 中</option>
+        </select>
+        <div class="field-hint">error 会阻止“校验通过”；warning 只提示。</div>
       </div>
 
       <div class="field">

@@ -1,82 +1,111 @@
 {% extends "base.html" %}
 {% block title %}系统信息 · 印制参数校验与成本测算 AI 系统{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1 class="page-title">系统信息</h1>
-    <p class="page-sub">运行配置、模型接入与限额（验收现场可在此自证真实调用模式）</p>
-  </div>
-  <div class="page-actions">
-    <a class="btn btn-light" href="/api/docs" target="_blank" rel="noopener">API 文档</a>
-    <a class="btn btn-light" href="/tasks">返回任务列表</a>
-  </div>
-</div>
-
 {% set m = meta|default({}, true) %}
 {% set mode = m.llm_mode|default(llm_mode|default('unknown')) %}
 {% set lim = m.limits|default(limits|default({}, true), true) %}
 
-<div class="card">
-  <h2 class="card-title">运行配置</h2>
-  <table class="table">
-    <tbody>
-      <tr><th>系统名称</th><td>{{ m.app|default('印制参数校验与成本测算 AI 系统') }}</td></tr>
-      <tr><th>版本</th><td>{{ m.version|default('-') }}</td></tr>
-      <tr><th>运行环境</th><td>{{ m.app_env|default('-') }}</td></tr>
-      <tr><th>数据库</th><td>{{ m.db|default('-') }}{% if m.db_file %}（{{ m.db_file }}，状态 {{ m.db_status|default('-') }}）{% endif %}</td></tr>
-      <tr><th>服务器时间</th><td>{{ m.server_time|default('-') }}</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<div class="card">
-  <h2 class="card-title">模型接入（真实调用自证）</h2>
-  <table class="table">
-    <tbody>
-      <tr>
-        <th>模型模式</th>
-        <td>
-          {% if mode == 'real' %}
-            <span class="badge badge-success">real（真实模型调用）</span>
-          {% else %}
-            <span class="badge badge-warning">mock（开发期模拟响应，验收需切换 real）</span>
-          {% endif %}
-        </td>
-      </tr>
-      <tr><th>模型名称</th><td>{{ m.model|default('-') }}</td></tr>
-      <tr><th>接口地址</th><td>{{ m.llm_base_url|default('-') }}</td></tr>
-      <tr>
-        <th>API Key</th>
-        <td>
-          {% if m.key_configured %}<span class="badge badge-success">已配置（不显示内容）</span>
-          {% else %}<span class="badge badge-danger">未配置或仍为占位符</span>{% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  <p class="muted">验收要求：<strong>LLM_MODE=real</strong> 且现场运行一次真实模型调用；执行记录页可见工具名/参数/来源 ID/状态，模型模式可在本页自证。</p>
-</div>
-
-<div class="card">
-  <h2 class="card-title">调用限额（原文要求"设置调用次数与超时限制"）</h2>
-  <div class="limit-chips">
-    <span class="chip">工具调用 ≤ {{ lim.max_tool_calls|default(6) }} 次</span>
-    <span class="chip">模型轮次 ≤ {{ lim.max_llm_rounds|default(8) }} 轮</span>
-    <span class="chip">模型超时 {{ lim.llm_timeout_s|default(30) }}s</span>
-    <span class="chip">工具超时 {{ lim.tool_timeout_ms|default(3000) }}ms</span>
-    <span class="chip">单次 AI 运行 {{ lim.ai_run_timeout_s|default(90) }}s</span>
-    <span class="chip">单任务 AI 运行 ≤ {{ lim.max_ai_runs|default(10) }} 次</span>
+<div class="page-head">
+  <div>
+    <h1 class="page-title">系统信息</h1>
+    <p class="page-sub">运行配置、模型接入、调用限额与演示账号；验收时可在此自证“真实调用模式”。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/api/docs" target="_blank" rel="noopener">API 文档</a>
+    <a class="btn btn-ghost" href="/dashboard">仪表盘</a>
+    <a class="btn btn-ghost" href="/tasks">返回任务列表</a>
   </div>
 </div>
 
-<div class="card">
-  <h2 class="card-title">演示账号</h2>
-  <table class="table">
-    <tbody>
-      <tr><th>业务操作员</th><td><code>operator / 123456</code>（张伟）</td></tr>
-      <tr><th>审核员</th><td><code>reviewer / 123456</code>（李静）</td></tr>
-    </tbody>
-  </table>
-  <p class="muted">演示数据均为教学模拟数据，仅用于系统演示，不作为真实业务数据；页面/资料中已注明来源与用途。</p>
+<div class="system-grid">
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">运行配置</h2><span class="hint">程序与数据库</span></div>
+    <div class="card-body">
+      <dl class="info-list">
+        <dt>系统名称</dt><dd>{{ m.app|default('印制参数校验与成本测算 AI 系统') }}</dd>
+        <dt>版本</dt><dd>{{ m.version|default('-') }}</dd>
+        <dt>运行环境</dt><dd>{{ m.app_env|default('-') }}</dd>
+        <dt>数据库</dt><dd>{{ m.db|default('-') }}{% if m.db_file %}（{{ m.db_file }}，状态：{{ m.db_status|default('-') }}）{% endif %}</dd>
+        <dt>服务器时间</dt><dd>{{ m.server_time|default('-') }}</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">模型接入（真实调用自证）</h2><span class="hint">来自 .env 的 LLM_* 配置</span></div>
+    <div class="card-body">
+      <dl class="info-list">
+        <dt>模型模式</dt>
+        <dd>
+          {% if mode == 'real' %}
+          <span class="badge badge-green">real（真实模型调用）</span>
+          {% else %}
+          <span class="badge badge-amber">mock（开发期模拟响应，验收需 real）</span>
+          {% endif %}
+        </dd>
+        <dt>模型名称</dt><dd>{{ m.model|default('-') }}</dd>
+        <dt>接口地址</dt><dd class="mono small">{{ m.llm_base_url|default('-') }}</dd>
+        <dt>API Key</dt>
+        <dd>
+          {% if m.key_configured %}<span class="badge badge-green">已配置（不显示内容）</span>
+          {% else %}<span class="badge badge-red">未配置或仍为占位符</span>{% endif %}
+        </dd>
+      </dl>
+      <p class="muted small">验收要求：LLM_MODE=real 且现场运行一次真实模型调用；执行记录页可见工具名/参数/来源 ID/状态。</p>
+    </div>
+  </section>
+
+  <section class="card span-2">
+    <div class="card-header"><h2 class="card-title">调用限额</h2><span class="hint">对应任务书“设置调用次数与超时限制”；来自 .env</span></div>
+    <div class="card-body">
+      <div class="limit-chips">
+        <span class="chip">工具调用 ≤ {{ lim.max_tool_calls|default(10) }} 次</span>
+        <span class="chip">模型轮次 ≤ {{ lim.max_llm_rounds|default(8) }} 轮</span>
+        <span class="chip">模型超时 {{ lim.llm_timeout_s|default(30) }}s</span>
+        <span class="chip">工具超时 {{ lim.tool_timeout_ms|default(3000) }}ms</span>
+        <span class="chip">单次 AI 运行 ≤ {{ lim.ai_run_timeout_s|default(120) }}s</span>
+        <span class="chip">单任务 AI 运行 ≤ {{ lim.max_ai_runs|default(10) }} 次</span>
+      </div>
+      <p class="muted small">限额用于防止单次/单任务无限调用；方案模式额外对候选组合做 24 个上限保护。</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">演示账号</h2><span class="hint">users 表 / seed 初始化</span></div>
+    <div class="card-body">
+      <dl class="info-list">
+        <dt>业务操作员</dt><dd><code>operator / 123456</code>（张伟）</dd>
+        <dt>审核员</dt><dd><code>reviewer / 123456</code>（李静）</dd>
+      </dl>
+      <p class="muted small">演示数据均为教学模拟数据，仅用于系统演示，不作为真实业务数据。</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">快捷入口</h2><span class="hint">验收常用页面</span></div>
+    <div class="card-body">
+      <div class="system-links">
+        <a class="btn btn-ghost btn-sm" href="/dashboard">运行仪表盘</a>
+        <a class="btn btn-ghost btn-sm" href="/evaluation">效果评测</a>
+        <a class="btn btn-ghost btn-sm" href="/validate">校验试算</a>
+        <a class="btn btn-ghost btn-sm" href="/diagrams">三张图</a>
+        <a class="btn btn-ghost btn-sm" href="/materials">资料库</a>
+        <a class="btn btn-ghost btn-sm" href="/rules">规则库</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="card span-2">
+    <div class="card-header"><h2 class="card-title">本页信息与什么有关？</h2></div>
+    <div class="card-body">
+      <dl class="info-list info-list-wide">
+        <dt>运行配置</dt><dd>程序版本、运行环境、SQLite 数据库路径/状态、服务器当前时间（<code>app/config.py</code>、<code>data/app.db</code>）。</dd>
+        <dt>模型接入</dt><dd>来自项目根 <code>.env</code> 的 <code>LLM_MODE / LLM_BASE_URL / LLM_MODEL / LLM_API_KEY</code>；Key 只显示是否配置，不显示内容。</dd>
+        <dt>调用限额</dt><dd>来自 <code>.env</code> 的 <code>MAX_TOOL_CALLS / MAX_LLM_ROUNDS / LLM_TIMEOUT_S / TOOL_TIMEOUT_MS / AI_RUN_TIMEOUT_S / MAX_AI_RUNS</code>，AI 运行时由编排器强制执行。</dd>
+        <dt>演示账号</dt><dd>数据库 <code>users</code> 表中的两个角色账号，由 <code>seed/seed_demo.py</code> 初始化。</dd>
+        <dt>真实性自证</dt><dd>模型模式为 real 且 Key 已配置时，任务详情会显示 REAL 标识与真实工具执行记录。</dd>
+      </dl>
+    </div>
+  </section>
 </div>
 {% endblock %}
