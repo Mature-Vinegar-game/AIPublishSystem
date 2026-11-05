@@ -698,6 +698,36 @@
     node.innerHTML = renderMarkdown(raw);
   }
 
+  function initTaskListHighlight() {
+    var card = qs('.task-list-card[data-highlight-keyword]');
+    if (!card) { return; }
+    var keyword = str(card.getAttribute('data-highlight-keyword')).trim();
+    if (!keyword) { return; }
+    var needle = keyword.toLowerCase();
+    var walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    while (walker.nextNode()) { nodes.push(walker.currentNode); }
+    nodes.forEach(function (node) {
+      var parent = node.parentNode;
+      if (!parent || ['SCRIPT', 'STYLE', 'MARK'].indexOf(parent.tagName) !== -1) { return; }
+      var text = node.nodeValue || '';
+      var index = text.toLowerCase().indexOf(needle);
+      if (index < 0) { return; }
+      var frag = document.createDocumentFragment();
+      var cursor = 0;
+      while (index >= 0) {
+        if (index > cursor) { frag.appendChild(document.createTextNode(text.slice(cursor, index))); }
+        var mark = document.createElement('mark');
+        mark.textContent = text.slice(index, index + keyword.length);
+        frag.appendChild(mark);
+        cursor = index + keyword.length;
+        index = text.toLowerCase().indexOf(needle, cursor);
+      }
+      if (cursor < text.length) { frag.appendChild(document.createTextNode(text.slice(cursor))); }
+      parent.replaceChild(frag, node);
+    });
+  }
+
   function initTaskDetail() {
     var root = el('task-detail');
     if (!root) { return; }
@@ -1299,11 +1329,91 @@
       }
     }
 
+    var toolCallCache = {};
+
+    function openToolCallDetail(record) {
+      if (!record) { return; }
+      var content = document.createElement('div');
+      var dl = document.createElement('dl');
+      dl.className = 'kv-list';
+      function addRow(label, value) {
+        var dt = document.createElement('dt');
+        dt.textContent = label;
+        var dd = document.createElement('dd');
+        dd.textContent = (value === null || value === undefined || value === '') ? '—' : str(value);
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      }
+      addRow('执行序号', record.seq);
+      addRow('工具名称', record.tool_name);
+      addRow('工具类型', record.tool_type);
+      addRow('状态', record.status);
+      addRow('错误码', record.error_code);
+      addRow('耗时', record.latency_ms === null || record.latency_ms === undefined ? '—' : (str(record.latency_ms) + ' ms'));
+      addRow('AI 任务', record.ai_task_id);
+      addRow('业务任务', record.business_task_id);
+      addRow('执行时间', record.created_at);
+      content.appendChild(dl);
+
+      var argsTitle = document.createElement('h4');
+      argsTitle.textContent = '完整参数（模型传入，后端校验/执行前）';
+      content.appendChild(argsTitle);
+      var argsPre = document.createElement('pre');
+      argsPre.className = 'json-block';
+      var argsValue = (record.args !== undefined && record.args !== null) ? record.args : record.args_json;
+      try { argsPre.textContent = typeof argsValue === 'string' ? JSON.stringify(JSON.parse(argsValue), null, 2) : JSON.stringify(argsValue, null, 2); }
+      catch (e) { argsPre.textContent = str(argsValue); }
+      content.appendChild(argsPre);
+
+      var resultTitle = document.createElement('h4');
+      resultTitle.textContent = '完整结果摘要（工具返回，落库）';
+      content.appendChild(resultTitle);
+      var resultPre = document.createElement('pre');
+      resultPre.className = 'json-block';
+      resultPre.textContent = str(record.result_summary || '—');
+      content.appendChild(resultPre);
+
+      var srcTitle = document.createElement('h4');
+      srcTitle.textContent = '来源 ID（依据校验锚点）';
+      content.appendChild(srcTitle);
+      var srcPre = document.createElement('pre');
+      srcPre.className = 'json-block';
+      var srcValue = (Array.isArray(record.source_ids) && record.source_ids.length) ? record.source_ids : record.source_ids_json;
+      try { srcPre.textContent = typeof srcValue === 'string' ? JSON.stringify(JSON.parse(srcValue), null, 2) : JSON.stringify(srcValue || [], null, 2); }
+      catch (e) { srcPre.textContent = str(srcValue); }
+      content.appendChild(srcPre);
+
+      showModal('工具执行详情 · ' + str(record.tool_name), content, 'AI 任务 #' + str(record.ai_task_id) + ' · 业务任务 #' + str(record.business_task_id));
+    }
+
+    document.addEventListener('click', async function (event) {
+      var origin = event.target;
+      if (!origin || typeof origin.closest !== 'function') { return; }
+      var cell = origin.closest('.tool-call-cell');
+      if (!cell) { return; }
+      var recordId = str(cell.getAttribute('data-tool-call-id'));
+      if (!recordId) { return; }
+      var record = toolCallCache[recordId];
+      if (!record && currentAiId) {
+        try {
+          var data = await apiFetch(aiUrl('/tool-calls'));
+          var rows = (data && data.records) || [];
+          rows.forEach(function (item) { toolCallCache[item.id] = item; });
+          record = toolCallCache[recordId];
+        } catch (e) {
+          toast('执行记录加载失败：' + e.message, 'error');
+        }
+      }
+      if (!record) { toast('未找到该执行记录，请刷新后重试', 'warn'); return; }
+      openToolCallDetail(record);
+    });
+
     function renderToolCalls(records) {
       var tbody = el('tool-calls-body');
       if (!tbody) { return; }
       tbody.textContent = '';
       (records || []).forEach(function (record, index) {
+        toolCallCache[record.id] = record;
         var tr = document.createElement('tr');
         var seq = document.createElement('td');
         seq.className = 'mono';
@@ -1327,7 +1437,9 @@
         args.appendChild(argsSpan);
 
         var resultSummary = document.createElement('td');
-        resultSummary.className = 'summary-cell';
+        resultSummary.className = 'summary-cell tool-call-cell';
+        resultSummary.setAttribute('data-tool-call-id', str(record.id));
+        resultSummary.title = '点击查看完整执行记录';
         var resultSpan = document.createElement('span');
         resultSpan.className = 'truncate';
         resultSpan.textContent = truncateText(record.result_summary || '—', 60);
@@ -1811,6 +1923,7 @@
     initTaskCreateForm();
     initLoginForm();
     initMaterialToggle();
+    initTaskListHighlight();
     initRuleToggle();
 
     document.addEventListener('click', function (event) {

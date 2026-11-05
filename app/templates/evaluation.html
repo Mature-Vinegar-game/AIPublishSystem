@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}效果评测 · 印制参数校验与成本测算 AI 系统{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">效果评测</h1>
+    <p class="page-sub">固定 benchmark 参数 → 真实工具计算 → 与预期值自动比对（不调用模型，可重复执行）。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/dashboard">仪表盘</a>
+    <a class="btn btn-ghost" href="/evaluation">重新评测</a>
+  </div>
+</div>
+
+<div class="dash-cards">
+  <div class="dash-card"><span class="dash-label">评测通过</span><strong class="dash-value">{{ passed }} / {{ total }}</strong><span class="dash-sub">确定性工具回归</span></div>
+  <div class="dash-card"><span class="dash-label">口径</span><strong class="dash-value">calculate_cost</strong><span class="dash-sub">资料库单价 + 规则库校验</span></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2 class="card-title">用例与结果</h2><span class="hint">预期值来自任务书演示口径与人工复算；金额误差阈值 0.01 元</span></div>
+  <div class="card-body table-wrap">
+    <table class="data-table compact">
+      <thead><tr><th>#</th><th>用例</th><th>参数</th><th class="text-right">预期总价</th><th class="text-right">实际总价</th><th class="text-right">预期单册</th><th class="text-right">实际单册</th><th>规则</th><th>结果</th></tr></thead>
+      <tbody>
+        {% for c in cases %}
+        <tr>
+          <td class="mono">{{ loop.index }}</td>
+          <td><b>{{ c.name }}</b></td>
+          <td class="muted small">{{ c.params.format }} / {{ c.params.print_sheet }}印张 / {{ c.params.qty }}册 / {{ c.params.paper_type }} / {{ c.params.binding }}</td>
+          <td class="text-right mono">{{ "%.2f"|format(c.expected_total) }}</td>
+          <td class="text-right mono">{{ "%.2f"|format(c.actual_total or 0) }}</td>
+          <td class="text-right mono">{{ "%.2f"|format(c.expected_per) }}</td>
+          <td class="text-right mono">{{ "%.2f"|format(c.actual_per or 0) }}</td>
+          <td>{% if c.valid %}<span class="badge badge-green">通过</span>{% else %}<span class="badge badge-red">问题</span>{% endif %}</td>
+          <td>{% if c.ok %}<span class="badge badge-green">PASS</span>{% else %}<span class="badge badge-red">FAIL</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2 class="card-title">说明</h2></div>
+  <div class="card-body">
+    <p class="muted">本页用于回答“AI 计算效果如何验证”：</p>
+    <ul class="md-list">
+      <li>金额由 <code>calculate_cost</code> 从资料库取价计算，不经过模型，结果确定、可重复；</li>
+      <li>每个用例同时执行 <code>validate_spec</code>，确保参数合规；</li>
+      <li>预期值来自需求/演示口径，失败时可直接对照参数与来源 ID 排查；</li>
+      <li>真实模型调用的结果与执行记录，仍以任务详情页为准（本页只评测“工具计算正确性”）。</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

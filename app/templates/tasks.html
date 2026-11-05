@@ -5,6 +5,7 @@
 {% set tlist = tasks or [] %}
 {% set sf = status_filter|default('ALL') or 'ALL' %}
 {% set kw = keyword|default('') %}
+{% set sort = sort|default('updated_desc') %}
 {% set cur_page = page|default(1) %}
 {% set total_count = total|default(tlist|length) %}
 {% set page_size = 20 %}
@@ -50,12 +51,12 @@
 
 <div class="quick-filters" aria-label="任务状态快捷筛选">
   {% for value in ['ALL', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'COMPLETED'] %}
-  <a class="chip{% if sf == value %} is-active{% endif %}" href="/tasks?status={{ value|urlencode }}{% if kw %}&keyword={{ kw|urlencode }}{% endif %}">{{ filter_labels[value] }}</a>
+  <a class="chip{% if sf == value %} is-active{% endif %}" href="/tasks?status={{ value|urlencode }}{% if kw %}&keyword={{ kw|urlencode }}{% endif %}&sort={{ sort|urlencode }}">{{ filter_labels[value] }}</a>
   {% endfor %}
   {% if kw %}<span class="chip chip-note">关键词：{{ kw }}</span>{% endif %}
 </div>
 
-<div class="card">
+<div class="card task-list-card" data-highlight-keyword="{{ kw }}">
   <div class="card-header">
     <h2 class="card-title">任务列表</h2>
     <form class="filter-form" method="get" action="/tasks">
@@ -67,7 +68,14 @@
       </select>
       <input class="filter-keyword" type="search" name="keyword" value="{{ kw }}"
              placeholder="任务编号 / 标题 / 目标" aria-label="关键词搜索">
-      <button class="btn btn-ghost btn-sm" type="submit">筛选</button>
+            <label class="filter-label" for="sort-filter">排序</label>
+      <select id="sort-filter" name="sort" data-auto-submit>
+        <option value="updated_desc"{% if sort == 'updated_desc' %} selected{% endif %}>最近更新</option>
+        <option value="created_desc"{% if sort == 'created_desc' %} selected{% endif %}>最近创建</option>
+        <option value="amount_desc"{% if sort == 'amount_desc' %} selected{% endif %}>总成本从高到低</option>
+        <option value="task_no_asc"{% if sort == 'task_no_asc' %} selected{% endif %}>任务编号升序</option>
+      </select>
+<button class="btn btn-ghost btn-sm" type="submit">筛选</button>
     </form>
   </div>
 
@@ -82,6 +90,7 @@
           <th class="nowrap">创建人</th>
           <th class="nowrap">更新时间</th>
           <th class="nowrap text-center">版本数</th>
+          <th class="nowrap text-right">最新总成本</th>
           <th class="nowrap">AI 状态</th>
           <th class="nowrap text-right">操作</th>
         </tr>
@@ -104,6 +113,7 @@
           <td class="nowrap">{{ t.created_by_name|default(t.created_by|default('—')) }}</td>
           <td class="nowrap muted">{{ t.updated_at|default(t.created_at|default('—')) }}</td>
           <td class="text-center">{{ t.versions_count|default(t.version_count|default(0)) }}</td>
+          <td class="text-right mono">{% if t.latest_total is not none %}{{ "%.2f"|format(t.latest_total) }}{% else %}<span class="muted">—</span>{% endif %}</td>
           <td>
             {% if as_ %}
             <span class="badge {{ am[1] }}">{{ am[0] }}</span>
@@ -133,10 +143,10 @@
     <span class="muted small">第 {{ cur_page }} 页 · 共 {{ total_count }} 条</span>
     <div class="pager-actions">
       {% if cur_page > 1 %}
-      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&page={{ cur_page - 1 }}">上一页</a>
+      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&sort={{ sort|urlencode }}&page={{ cur_page - 1 }}">上一页</a>
       {% endif %}
       {% if cur_page * page_size < total_count %}
-      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&page={{ cur_page + 1 }}">下一页</a>
+      <a class="btn btn-ghost btn-sm" href="/tasks?status={{ sf|urlencode }}&keyword={{ kw|urlencode }}&sort={{ sort|urlencode }}&page={{ cur_page + 1 }}">下一页</a>
       {% endif %}
     </div>
   </div>

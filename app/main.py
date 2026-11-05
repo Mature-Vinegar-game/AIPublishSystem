@@ -570,6 +570,65 @@ def _dashboard_context(user: Optional[dict], db: Session) -> dict:
     )
 
 
+BENCHMARKS = [
+    {"name": "教辅重印基线", "params": {"format": "16开", "print_sheet": 12, "qty": 3000, "paper_type": "胶版纸80g", "binding": "胶装", "color_pages": 4, "process": "覆膜"}, "expected_total": 14638.00, "expected_per": 4.88},
+    {"name": "输入变化（14印张/5000册）", "params": {"format": "16开", "print_sheet": 14, "qty": 5000, "paper_type": "胶版纸80g", "binding": "胶装", "color_pages": 4, "process": "覆膜"}, "expected_total": 27890.00, "expected_per": 5.58},
+    {"name": "线圈培训手册（单色/无工艺）", "params": {"format": "32开", "print_sheet": 6, "qty": 2000, "paper_type": "双胶纸80g", "binding": "线圈装", "color_pages": 0, "process": ""}, "expected_total": 4384.00, "expected_per": 2.19},
+    {"name": "铜版纸精装画册", "params": {"format": "16开", "print_sheet": 8, "qty": 2000, "paper_type": "铜版纸157g", "binding": "精装", "color_pages": 4, "process": "覆膜"}, "expected_total": 11888.00, "expected_per": 5.94},
+]
+
+
+@app.get("/evaluation", include_in_schema=False)
+def evaluation_page(request: Request, db: Session = Depends(get_db)):
+    """确定性效果评测：固定 benchmark 参数 → calculate_cost/validate_spec → 与预期对比。"""
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    from app.agent.tools import calculate_cost, validate_spec
+
+    cases = []
+    passed = 0
+    for item in BENCHMARKS:
+        params = dict(item["params"])
+        calc = calculate_cost(params)
+        val = validate_spec(params)
+        data = calc.get("data") or {}
+        actual_total = data.get("total")
+        actual_per = data.get("per_copy")
+        valid = bool((val.get("data") or {}).get("valid"))
+        ok = (
+            valid
+            and actual_total is not None
+            and abs(float(actual_total) - float(item["expected_total"])) < 0.011
+            and actual_per is not None
+            and abs(float(actual_per) - float(item["expected_per"])) < 0.011
+        )
+        if ok:
+            passed += 1
+        cases.append(
+            {
+                "name": item["name"],
+                "params": params,
+                "expected_total": item["expected_total"],
+                "expected_per": item["expected_per"],
+                "actual_total": actual_total,
+                "actual_per": actual_per,
+                "valid": valid,
+                "ok": ok,
+                "source_ids": (calc.get("source") or {}).get("ids") or [],
+                "error_code": calc.get("error_code"),
+            }
+        )
+    context = _page_context(
+        user,
+        "evaluation",
+        cases=cases,
+        passed=passed,
+        total=len(cases),
+    )
+    return _render(request, "evaluation.html", context)
+
+
 @app.get("/dashboard", include_in_schema=False)
 def dashboard_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request)
@@ -585,6 +644,7 @@ def tasks_page(
     status_filter: Optional[str] = Query(default=None),
     keyword: Optional[str] = Query(default=None),
     page: int = Query(default=1, ge=1),
+    sort: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request)
@@ -592,7 +652,7 @@ def tasks_page(
         return _login_redirect()
     selected_status = status_filter or status or "ALL"
     items, total, page, _page_size = task_service.list_tasks(
-        db, user, status=selected_status, keyword=keyword, page=page, page_size=20
+        db, user, status=selected_status, keyword=keyword, page=page, page_size=20, sort=sort
     )
     context = _page_context(
         user,
@@ -603,6 +663,7 @@ def tasks_page(
         total=total,
         page=page,
         keyword=keyword or "",
+        sort=(sort or "updated_desc"),
     )
     return _render(request, "tasks.html", context)
 

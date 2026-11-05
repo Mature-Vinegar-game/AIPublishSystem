@@ -329,6 +329,24 @@ def ensure_editable(task: BusinessTask) -> None:
         )
 
 
+def _latest_totals(db: Session, task_ids: list[int]) -> dict:
+    """批量取任务最新 AI 结果的总成本，用于列表展示/金额排序。"""
+    if not task_ids:
+        return {}
+    rows = (
+        db.query(AiResult)
+        .filter(AiResult.business_task_id.in_(list(task_ids)))
+        .order_by(AiResult.business_task_id, AiResult.id.asc())
+        .all()
+    )
+    totals: dict = {}
+    for row in rows:
+        structured = basis_service.parse_json(row.structured_json, {})
+        if isinstance(structured, dict) and structured.get("total") is not None:
+            totals[row.business_task_id] = structured.get("total")
+    return totals
+
+
 def list_tasks(
     db: Session,
     user: dict,
@@ -336,6 +354,7 @@ def list_tasks(
     keyword: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
+    sort: Optional[str] = None,
 ) -> Tuple[List[dict], int, int, int]:
     """按角色过滤的任务列表，返回 (items, total, page, page_size)。"""
     query = db.query(BusinessTask)
@@ -365,13 +384,39 @@ def list_tasks(
     total = query.count()
     page = max(1, int(page or 1))
     page_size = max(1, min(100, int(page_size or 20)))
-    rows = (
-        query.order_by(BusinessTask.updated_at.desc(), BusinessTask.id.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
-    return [serialize_task(db, row) for row in rows], total, page, page_size
+    sort = (sort or "updated_desc").strip()
+    latest_map: dict = {}
+    if sort == "amount_desc":
+        # 任务量级在演示场景较小（几十到几百），按最新结果金额排序即可
+        all_rows = query.all()
+        latest_map = _latest_totals(db, [row.id for row in all_rows])
+        all_rows.sort(key=lambda row: latest_map.get(row.id, -1), reverse=True)
+        total = len(all_rows)
+        rows = all_rows[(page - 1) * page_size : page * page_size]
+    else:
+        if sort == "created_desc":
+            order = (BusinessTask.created_at.desc(), BusinessTask.id.desc())
+        elif sort == "task_no_asc":
+            order = (BusinessTask.task_no.asc(), BusinessTask.id.asc())
+        elif sort == "updated_asc":
+            order = (BusinessTask.updated_at.asc(), BusinessTask.id.asc())
+        else:
+            sort = "updated_desc"
+            order = (BusinessTask.updated_at.desc(), BusinessTask.id.desc())
+        rows = (
+            query.order_by(*order)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        latest_map = _latest_totals(db, [row.id for row in rows])
+
+    items = []
+    for row in rows:
+        item = serialize_task(db, row)
+        item["latest_total"] = latest_map.get(row.id)
+        items.append(item)
+    return items, total, page, page_size
 
 
 # ============================ 写操作 ============================

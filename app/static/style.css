@@ -1177,3 +1177,9 @@ input[type="number"] { font-family: var(--mono); }
 .diff-up { color: #B23B36; }
 .diff-down { color: #1F7A4D; }
 @media (max-width: 900px) { .compare-grid { grid-template-columns: 1fr; } }
+
+
+/* ---- 工具执行记录：点击查看详情 ---- */
+.tool-call-cell { cursor: pointer; }
+.tool-call-cell:hover { background: #F1F5FA; }
+.tool-cell-hint { font-size: 11px; color: var(--primary-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }

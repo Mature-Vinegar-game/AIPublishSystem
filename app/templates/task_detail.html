@@ -572,7 +572,7 @@
                   {% if args is string %}{{ args|truncate(72, true, '…') }}{% else %}{{ (args|tojson)|truncate(72, true, '…') }}{% endif %}
                 </span>
               </td>
-              <td class="summary-cell"><span class="truncate" title="{{ rsum }}">{{ rsum|truncate(60, true, '…') }}</span></td>
+              <td class="summary-cell tool-call-cell" data-tool-call-id="{{ c.id|default('') }}" title="点击查看完整执行记录"><span class="truncate" title="{{ rsum }}">{{ rsum|truncate(60, true, '…') }}</span> <span class="tool-cell-hint">查看</span></td>
               <td class="summary-cell">
                 {% if src %}
                   {% if src is string %}<span class="mono">{{ src }}</span>{% elif src is iterable %}<span class="mono">{{ src|join(', ') }}</span>{% else %}<span class="mono">{{ src }}</span>{% endif %}
