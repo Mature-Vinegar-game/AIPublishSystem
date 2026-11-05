@@ -124,7 +124,7 @@ def main():
 大小：{size:,} bytes
 SHA-256：{digest}
 交付文件数：{sum(1 for _ in DELIVERY.rglob('*') if _.is_file())}
-源码 zip：{DELIVERY / '01_可运行程序及源码' / '出版AI系统_源码_20261101.zip'}
+源码 zip：{DELIVERY / '01_可运行程序及源码' / '出版AI系统_源码_20261105.zip'}
 校验清单：{DELIVERY / 'SHA256SUMS.txt'}
 
 提交前自检：demo_check 21/21；finalize 返回 0（详见执行控制台）

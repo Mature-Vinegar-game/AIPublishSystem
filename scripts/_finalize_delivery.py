@@ -50,7 +50,7 @@ def main():
     print("[3/4] 计算校验值 ...")
     files = {
         "submission": SUB_ZIP,
-        "source": DELIVERY / "01_可运行程序及源码" / "出版AI系统_源码_20261101.zip",
+        "source": DELIVERY / "01_可运行程序及源码" / "出版AI系统_源码_20261105.zip",
         "docx": DELIVERY / "02_需求与设计说明" / "需求与设计说明.docx",
         "html": DELIVERY / "02_需求与设计说明" / "三张图演示.html",
         "index": DELIVERY / "00_材料索引与提交自检.md",
@@ -84,7 +84,7 @@ def main():
 
 | 文件 | 大小（bytes） | SHA-256 |
 |---|---|---|
-| 源码 zip（包内 `01_.../出版AI系统_源码_20261101.zip`） | {vals['source']['size']:,} | `{vals['source']['sha256']}` |
+| 源码 zip（包内 `01_.../出版AI系统_源码_20261105.zip`） | {vals['source']['size']:,} | `{vals['source']['sha256']}` |
 | 需求与设计说明.docx | {vals['docx']['size']:,} | `{vals['docx']['sha256']}` |
 | 三张图演示.html | {vals['html']['size']:,} | `{vals['html']['sha256']}` |
 | 00_材料索引与提交自检.md | {vals['index']['size']:,} | `{vals['index']['sha256']}` |

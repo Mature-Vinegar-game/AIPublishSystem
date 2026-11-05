@@ -167,7 +167,7 @@ def main():
     # 标题区
     para(doc, "印制参数校验与成本测算 AI 系统", size=22, bold=True, color=ACCENT,
          align=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
-    para(doc, "需求与设计说明（v1.1）", size=13, bold=True, color=RGBColor(0x2E, 0x74, 0xB5),
+    para(doc, "需求与设计说明（v1.3 · 最终版）", size=13, bold=True, color=RGBColor(0x2E, 0x74, 0xB5),
          align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
     add_table(
         doc,
@@ -177,7 +177,7 @@ def main():
             ["小组信息", "第 ____ 组（成员A / 成员B / 成员C / 成员D / 成员E，姓名学号以分工表为准）"],
             ["模型及接入", "DeepSeek API（OpenAI 兼容协议），模型 deepseek-flash，密钥经环境变量注入"],
             ["技术栈", "Python 3.14 + FastAPI + SQLAlchemy + SQLite(WAL) + Jinja2 服务端模板；单进程单 worker，无 Node/无前端构建"],
-            ["版本与日期", "v1.1（2026-11-01 基准版）；对应任务书 2026 年 10 月版"],
+            ["版本与日期", "v1.3（2026-11-05 最终版）；对应任务书 2026 年 10 月版"],
             ["图示", "三张图 HTML 演示版：docs/三张图演示.html；系统运行后可访问 /diagrams"],
         ],
         widths=[3.6, 13.6],
@@ -233,14 +233,16 @@ def main():
         ["层", "内容", "程序对应"],
         [
             ["数据层", "SQLite 单文件，10 张表：users、business_tasks、materials、task_materials、rules、ai_tasks、tool_call_records、ai_results、result_versions、review_records", "app/models.py、app/db.py"],
-            ["接口层", "24 个 REST 接口（统一 /api）：认证 2、任务 9、AI 5、资料 4、规则 3、系统 1", "app/api/*.py"],
-            ["Agent 层", "单 Agent 循环：模型自主选工具与参数，后端校验执行并回填；工具 4 个 / 3 类；完成判定（≥2 类工具成功且依据非空）；调用限额与故障注入", "app/agent/{orchestrator,llm,tools,prompts}.py"],
-            ["页面层", "Jinja2 服务端渲染 7 个页面；原生 JS 轮询/校验/依据弹层；无 CDN、无构建", "app/templates、app/static"],
+            ["接口层", "25 个 REST 接口（统一 /api）：认证 2、任务 9、AI 5、资料 4、规则 4、系统 1（含规则启停 PATCH）", "app/api/*.py"],
+            ["Agent 层", "单 Agent 循环：模型自主选工具与参数，后端校验执行并回填；工具 4 个 / 3 类（方案模式另含 plan_candidates）；完成判定（≥2 类工具成功且依据非空）；调用限额与故障注入", "app/agent/{orchestrator,llm,tools,prompts}.py"],
+            ["页面层", "Jinja2 服务端渲染 11 个页面（任务/方案模式/资料/规则/校验试算/效果评测/仪表盘/系统信息等）；原生 JS；无 CDN、无构建", "app/templates、app/static"],
         ],
         widths=[2.4, 10.4, 4.4],
     )
-    para(doc, "工具清单：search_quotes（检索纸张/工艺/装订/费率）、get_rules（读取规则）、validate_spec（参数校验）、calculate_cost（成本计算）。每个工具返回统一信封（ok/data/source.ids/warnings/error_code），每次调用落 tool_call_records，同一 business_task_id 贯通。", size=9.5)
+    para(doc, "工具清单：search_quotes（检索纸张/工艺/装订/费率）、get_rules（读取规则）、validate_spec（参数校验）、calculate_cost（成本计算）；方案模式另有 plan_candidates（候选方案枚举，最多 24 个候选）。每个工具返回统一信封（ok/data/source.ids/warnings/error_code），每次调用落 tool_call_records，同一 business_task_id 贯通。", size=9.5)
     para(doc, "限额（[原文 L49]，页面页脚与系统信息页展示）：工具 ≤10 次、模型 ≤8 轮、模型 30s、工具 3000ms、单次运行 ≤120s、单任务运行 ≤10 次。验收固定真实模型（real），mock 仅开发期并标注。", size=9.5)
+
+    para(doc, "最终版增强（选做，不影响标准主流程）：方案模式（部分参数留白 + 预算生成 1–3 个方案）、运行仪表盘、校验试算、效果评测、版本对比、按审核意见重跑、工具执行详情、导出/打印、任务检索增强。以上功能均不改变 10 张表、标准任务状态机与审核流程。", size=9.5)
 
     heading(doc, "6 验收范围与明确不做")
     bullet(doc, "验收范围：完成所选业务（印制成本测算）的主要流程；6 项必做功能全部可运行；真实工具调用与执行记录可展示；人工确认与至少 2 个可查版本；≥10 条测试用例覆盖 9 类场景；结果依据可追溯。")
@@ -248,13 +250,13 @@ def main():
 
     heading(doc, "7 三张图")
     para(doc, "三张图按任务书要求 [原文 L79] 绘制，并与程序实际实现一致；HTML 演示版可离线打开（docs/三张图演示.html），系统运行后亦可访问 /diagrams。", size=10)
-    add_image(doc, SHOT / "diagram_1.png", "图 1  系统功能图：角色 → 页面 → 功能模块 → 10 张表 / 24 个接口")
+    add_image(doc, SHOT / "diagram_1.png", "图 1  系统功能图：角色 → 页面 → 功能模块 → 10 张表 / 25 个接口（基线架构；最终版增强见文字说明）")
     add_image(doc, SHOT / "diagram_2.png", "图 2  技术调用图：浏览器 → FastAPI 单进程（页面/API/服务/Agent/工具）→ 模型 → SQLite")
     add_image(doc, SHOT / "diagram_3.png", "图 3  数据处理与工具执行图：同一 business_task_id 贯穿数据链路与依据三跳")
 
     heading(doc, "8 数据、测试与部署摘要")
-    bullet(doc, "数据：教学模拟数据（纸张/工艺/装订/费率报价、校验规则、虚构书目）；材料保留 material_no/source/version_no/enabled；3 类脱敏运行记录见 docs/11_运行记录_三类脱敏.md 与 evidence/。")
-    bullet(doc, "测试：TC01–TC12 共 12 条用例，覆盖 9 类强制场景 + 2 项业务专项 + 失败重试不丢修改；2026-11-01 真实模式执行 12/12 PASS；缺陷 5 条均已修复回归（docs/07）。")
+    bullet(doc, "数据：教学模拟数据；资料库 30 条（18 纸张 / 6 工艺 / 5 装订 / 1 费率）、规则库 22 条（20 spec + 1 data + 1 calc）；材料保留 material_no/source/version_no/enabled；3 类脱敏运行记录见 docs/11 与 evidence/。")
+    bullet(doc, "测试：核心 TC01–TC12 共 12 条（覆盖 9 类场景）+ 最终版补充 TC13–TC18；核心 12/12 PASS；pytest 23/23、full_check 38/38；缺陷 8 条均已修复回归（docs/07）。")
     bullet(doc, "部署：Windows + Python 3.14；pip install -r requirements.txt（或离线 vendor）+ start.bat；单进程 :8000、单 worker；密钥仅存 .env，不入源码/仓库；无需 Node/Redis/Docker。")
     para(doc, "文档与程序一致性声明：本文所述页面、接口、表、限额与提交目录中的实际代码一致；三张图为 HTML/Markdown 双版本，节点均可在程序中点开核查。", size=9.5, color=RGBColor(0x59, 0x59, 0x59))
 

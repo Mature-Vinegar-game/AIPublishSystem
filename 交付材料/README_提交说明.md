@@ -2,7 +2,7 @@
 
 业务方向：**印制参数校验与成本测算**（任务书 7 个可选方向之一）
 小组：第 ____ 组（成员A-E，姓名学号待补）
-版本：v1.1 · 2026-11-01
+版本：v1.3 · 2026-11-05（最终版）
 仓库：https://github.com/Mature-Vinegar-game/AIPublishSystem
 
 ## 目录
@@ -14,7 +14,7 @@
 - `05_小组分工与开发记录/` 分工记录、表7、表8
 
 ## 快速验证（3 分钟）
-1. 解压 `01_.../出版AI系统_源码_20261101.zip`；
+1. 解压 `01_.../出版AI系统_源码_20261105.zip`；
 2. `python -m pip install -r requirements.txt`；
 3. 复制 `.env.example` 为 `.env` 并填 `LLM_API_KEY`（模型默认 `deepseek-chat`，本机实测用 `deepseek-flash`）；
 4. 双击 `start.bat` → 打开 <http://127.0.0.1:8000>；
