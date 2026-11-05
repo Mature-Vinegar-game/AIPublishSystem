@@ -888,6 +888,93 @@ async def task_create_page(request: Request, db: Session = Depends(get_db)):
 
 
 # ============================ 任务详情 ============================
+@app.get("/tasks/{task_id}/versions/compare", include_in_schema=False)
+def version_compare_page(
+    task_id: int,
+    request: Request,
+    left: Optional[int] = Query(default=None),
+    right: Optional[int] = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """版本对比：金额/明细/依据 + 正文差异（只读）。"""
+    import difflib
+
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    try:
+        task = task_service.get_visible_task(db, task_id, user)
+    except StarletteHTTPException as exc:
+        detail = exc.detail if isinstance(exc.detail, dict) else {}
+        return _message_page("无法查看该任务", str(detail.get("message") or "任务不存在或不在你的权限范围内"), exc.status_code)
+
+    versions = version_service.list_versions(db, task.id, newest_first=False)
+    if len(versions) < 2:
+        return _message_page("暂无可对比版本", "当前任务至少需要两个版本才能对比。", 400, f"/tasks/{task.id}")
+    by_no = {int(v.get("version_no") or 0): v for v in versions}
+    left_no = left if left in by_no else versions[0]["version_no"]
+    right_no = right if right in by_no else versions[-1]["version_no"]
+    lv = by_no[left_no]
+    rv = by_no[right_no]
+
+    left_struct = lv.get("structured") or {}
+    right_struct = rv.get("structured") or {}
+    left_items = {str(x.get("name")): x.get("amount") for x in (left_struct.get("line_items") or [])}
+    right_items = {str(x.get("name")): x.get("amount") for x in (right_struct.get("line_items") or [])}
+    names = list(dict.fromkeys(list(left_items.keys()) + list(right_items.keys())))
+    item_rows = []
+    for name in names:
+        lval = left_items.get(name)
+        rval = right_items.get(name)
+        delta = None
+        if isinstance(lval, (int, float)) and isinstance(rval, (int, float)):
+            delta = round(float(rval) - float(lval), 2)
+        item_rows.append({"name": name, "left": lval, "right": rval, "delta": delta})
+
+    left_basis = {(str(b.get("type")), str(b.get("id"))) for b in (lv.get("basis_refs") or []) if isinstance(b, dict)}
+    right_basis = {(str(b.get("type")), str(b.get("id"))) for b in (rv.get("basis_refs") or []) if isinstance(b, dict)}
+    basis_added = sorted(right_basis - left_basis)
+    basis_removed = sorted(left_basis - right_basis)
+
+    diff_lines = []
+    for line in difflib.unified_diff(
+        (lv.get("content_md") or "").splitlines(),
+        (rv.get("content_md") or "").splitlines(),
+        fromfile="v" + str(left_no),
+        tofile="v" + str(right_no),
+        lineterm="",
+    ):
+        if line.startswith("+++") or line.startswith("---"):
+            continue
+        if line.startswith("@@"):
+            kind = "meta"
+        elif line.startswith("+"):
+            kind = "add"
+        elif line.startswith("-"):
+            kind = "del"
+        else:
+            kind = "same"
+        diff_lines.append({"kind": kind, "text": line})
+
+    context = _page_context(
+        user,
+        "tasks",
+        task_info=task_service.serialize_task(db, task),
+        versions=versions,
+        left=lv,
+        right=rv,
+        item_rows=item_rows,
+        changed_amounts={
+            "total": (left_struct.get("total"), right_struct.get("total")),
+            "per_copy": (left_struct.get("per_copy"), right_struct.get("per_copy")),
+        },
+        basis_added=basis_added,
+        basis_removed=basis_removed,
+        diff_lines=diff_lines,
+    )
+    return _render(request, "version_compare.html", context)
+
+
 @app.get("/tasks/{task_id}", include_in_schema=False)
 def task_detail_page(task_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request)
@@ -920,6 +1007,14 @@ def task_detail_page(task_id: int, request: Request, db: Session = Depends(get_d
         tool_calls=tool_calls,
         versions=version_service.list_versions(db, task.id),
         reviews=task_service.reviews_for_task(db, task.id),
+        last_reject_opinion=next(
+            (
+                str(r.get("opinion") or "")
+                for r in reversed(task_service.reviews_for_task(db, task.id))
+                if str(r.get("action") or "").upper() == "REJECT"
+            ),
+            "",
+        ),
         **_permissions(user, task),
         **_form_options(db),
     )
@@ -1219,6 +1314,75 @@ def _rules_context(user: Optional[dict], db: Session) -> dict:
         for row in rows
     ]
     return _page_context(user, "rules", rules=rules)
+
+
+@app.get("/validate", include_in_schema=False)
+def validate_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    context = _page_context(
+        user,
+        "validate",
+        **_form_options(db),
+        form_data={},
+        validation=None,
+    )
+    return _render(request, "validate.html", context)
+
+
+@app.post("/validate", include_in_schema=False)
+async def validate_submit(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    try:
+        form = await request.form()
+    except Exception:
+        form = {}
+    params: dict = {}
+    fmt = _form_value(form, "format")
+    if fmt:
+        params["format"] = fmt
+    sheet = _form_value(form, "print_sheet")
+    if sheet:
+        params["print_sheet"] = _to_float(sheet, 0)
+    qty = _form_value(form, "qty")
+    if qty:
+        params["qty"] = _to_int(qty, 0)
+    paper = _form_value(form, "paper_type")
+    if paper:
+        params["paper_type"] = paper
+    binding = _form_value(form, "binding")
+    if binding:
+        params["binding"] = binding
+    color = _form_value(form, "color_pages")
+    if color:
+        params["color_pages"] = _to_int(color, 0)
+    process = _form_value(form, "process")
+    if process:
+        params["process"] = process
+
+    from app.agent.tools import validate_spec
+
+    result = validate_spec(params) if params else {"ok": False, "error_code": "TOOL_ARGS_INVALID", "data": {"valid": False, "issues": [{"field": "params", "message": "请至少填写一个参数", "rule_code": ""}]}}
+    data = result.get("data") or {}
+    context = _page_context(
+        user,
+        "validate",
+        **_form_options(db),
+        form_data=dict(form),
+        validation={
+            "ok": bool(result.get("ok")),
+            "valid": bool(data.get("valid")),
+            "issues": data.get("issues") or [],
+            "normalized": data.get("normalized") or {},
+            "error_code": result.get("error_code"),
+            "error_message": result.get("error_message"),
+            "params": params,
+        },
+    )
+    return _render(request, "validate.html", context)
 
 
 @app.get("/rules", include_in_schema=False)

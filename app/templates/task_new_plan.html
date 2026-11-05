@@ -106,11 +106,15 @@
 
         <div class="field">
           <label for="paper_type">纸张（可留白）</label>
-          <input id="paper_type" name="paper_type" type="text" maxlength="50" list="paper-suggestions"
-                 value="{{ f.paper_type|default('') }}" placeholder="留空=由系统推荐；也可指定如 胶版纸80g">
-          <datalist id="paper-suggestions">
-            {% for paper in paper_opts %}<option value="{{ paper }}"></option>{% endfor %}
-          </datalist>
+          <select id="paper_type" name="paper_type">
+            <option value=""{% if not f.paper_type %} selected{% endif %}>由系统推荐</option>
+            {% for paper in paper_opts %}
+            <option value="{{ paper }}"{% if f.paper_type|default('') == paper %} selected{% endif %}>{{ paper }}</option>
+            {% endfor %}
+            {% if f.paper_type and f.paper_type not in paper_opts %}
+            <option value="{{ f.paper_type }}" selected>{{ f.paper_type }}（当前值）</option>
+            {% endif %}
+          </select>
         </div>
 
         <div class="field">

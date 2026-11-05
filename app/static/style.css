@@ -1146,3 +1146,34 @@ input[type="number"] { font-family: var(--mono); }
 .baseline-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
 .baseline-row strong { color: var(--primary); font-family: var(--mono); }
 @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+
+
+/* ---- 任务列表快捷筛选 ---- */
+.quick-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.chip { display: inline-flex; align-items: center; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink-2); font-size: 12.5px; text-decoration: none; transition: all .15s ease; }
+.chip:hover { border-color: var(--primary-2); color: var(--primary); }
+.chip.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip-note { background: #F1F5FA; color: var(--muted); }
+
+
+/* ---- 校验试算 ---- */
+.issue-list { margin: 8px 0 0; padding-left: 18px; }
+.issue-list li { margin: 6px 0; line-height: 1.6; font-size: 13px; }
+
+
+/* ---- 版本对比 ---- */
+.compare-form { margin-bottom: 14px; }
+.compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.compare-grid .card-wide { grid-column: 1 / -1; }
+.compare-summary { display: flex; align-items: center; gap: 16px; }
+.compare-col { display: flex; flex-direction: column; gap: 4px; }
+.compare-col strong { font-size: 20px; color: var(--primary); font-family: var(--mono); }
+.compare-arrow { color: var(--muted); font-size: 18px; }
+.diff-block { margin: 0; padding: 10px 12px; background: #FBFCFE; border: 1px solid var(--line); border-radius: 8px; max-height: 460px; overflow: auto; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
+.diff-block .diff-add { display: block; background: #EAF7F0; color: #1F7A4D; }
+.diff-block .diff-del { display: block; background: #FDECEA; color: #B23B36; }
+.diff-block .diff-meta { display: block; color: #7A8699; }
+.diff-block .diff-same { display: block; color: var(--ink-2); }
+.diff-up { color: #B23B36; }
+.diff-down { color: #1F7A4D; }
+@media (max-width: 900px) { .compare-grid { grid-template-columns: 1fr; } }

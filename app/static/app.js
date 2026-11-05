@@ -962,6 +962,44 @@
       if (refresh) { refresh.hidden = false; }
       var resultRefresh = el('btn-result-refresh');
       if (resultRefresh) { resultRefresh.hidden = false; }
+      var rerunByReview = el('btn-rerun-by-review');
+      if (rerunByReview) {
+        rerunByReview.addEventListener('click', async function () {
+          var note = str(rerunByReview.getAttribute('data-review-note'));
+          if (!window.confirm('将按最近一次审核意见重新运行 AI 测算（历史版本与记录保留），继续？')) { return; }
+          setBusy(rerunByReview, true, '启动中…');
+          try {
+            await apiFetch('/api/business-tasks/' + encodeURIComponent(taskId) + '/ai-tasks', {
+              method: 'POST',
+              body: note ? { note: note } : {}
+            });
+            flash('已按审核意见启动新的 AI 运行', 'success');
+            window.setTimeout(function () { location.reload(); }, 500);
+          } catch (e) {
+            toast('启动失败：' + e.message, 'error', 7000);
+            setBusy(rerunByReview, false);
+          }
+        });
+      }
+
+      var exportBtn = el('btn-export-result');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+          var md = el('result-content-md');
+          var raw = md ? (md.getAttribute('data-raw') || md.textContent || '') : '';
+          if (!str(raw).trim()) { toast('暂无可导出的结果内容', 'warn'); return; }
+          var taskNo = str(root.getAttribute('data-task-no')) || taskId;
+          var blob = new Blob([raw], { type: 'text/markdown;charset=utf-8' });
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = taskNo + '-测算说明.md';
+          document.body.appendChild(link);
+          link.click();
+          window.setTimeout(function () { URL.revokeObjectURL(link.href); link.remove(); }, 500);
+          toast('已导出 Markdown', 'success');
+        });
+      }
+
       var adopt = el('btn-adopt-ai');
       if (adopt) { adopt.hidden = true; }
 

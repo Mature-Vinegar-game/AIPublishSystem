@@ -79,7 +79,7 @@ def main():
     add("系统信息页可访问（真实模式自证）", st == 200 and "真实" in html, st)
 
     # 3 演示数据
-    st, body = req("GET", "/api/business-tasks")
+    st, body = req("GET", "/api/business-tasks?page_size=100")
     try:
         items = (json.loads(body).get("data") or {}).get("items") or []
     except Exception:

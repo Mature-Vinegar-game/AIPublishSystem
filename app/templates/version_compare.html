@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}版本对比 · 印制参数校验与成本测算 AI 系统{% endblock %}
+{% block content %}
+{% set lv = left %}{% set rv = right %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">版本对比</h1>
+    <p class="page-sub">任务 {{ task_info.task_no|default('—') }} · {{ task_info.title|default('—') }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/tasks/{{ task_info.id }}">← 返回任务</a>
+  </div>
+</div>
+
+<form class="card compare-form" method="get" action="/tasks/{{ task_info.id }}/versions/compare">
+  <div class="card-body form-row">
+    <div class="field grow">
+      <label for="left">左侧版本</label>
+      <select id="left" name="left">
+        {% for v in versions %}
+        <option value="{{ v.version_no }}"{% if v.version_no == lv.version_no %} selected{% endif %}>v{{ v.version_no }}（{{ v.source_label|default(v.source) }}）</option>
+        {% endfor %}
+      </select>
+    </div>
+    <span class="compare-arrow">→</span>
+    <div class="field grow">
+      <label for="right">右侧版本</label>
+      <select id="right" name="right">
+        {% for v in versions %}
+        <option value="{{ v.version_no }}"{% if v.version_no == rv.version_no %} selected{% endif %}>v{{ v.version_no }}（{{ v.source_label|default(v.source) }}）</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">对比</button>
+  </div>
+</form>
+
+<div class="compare-grid">
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">金额摘要</h2></div>
+    <div class="card-body">
+      <div class="compare-summary">
+        <div class="compare-col"><span class="muted small">v{{ lv.version_no }}</span><strong>{{ "%.2f"|format(changed_amounts.total[0] or 0) }} 元</strong><span class="muted small">单册 {{ "%.2f"|format(changed_amounts.per_copy[0] or 0) }} 元</span></div>
+        <div class="compare-arrow">→</div>
+        <div class="compare-col"><span class="muted small">v{{ rv.version_no }}</span><strong>{{ "%.2f"|format(changed_amounts.total[1] or 0) }} 元</strong><span class="muted small">单册 {{ "%.2f"|format(changed_amounts.per_copy[1] or 0) }} 元</span></div>
+      </div>
+      <p class="muted small">版本来源：{{ lv.source_label|default(lv.source) }} / {{ rv.source_label|default(rv.source) }}；创建时间：{{ lv.created_at|default('—') }} / {{ rv.created_at|default('—') }}</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">依据变化</h2></div>
+    <div class="card-body">
+      {% if basis_added %}<p><b>右侧新增：</b>{% for item in basis_added %}<span class="badge badge-blue">{{ item[1] }}</span> {% endfor %}</p>{% endif %}
+      {% if basis_removed %}<p><b>右侧移除：</b>{% for item in basis_removed %}<span class="badge badge-amber">{{ item[1] }}</span> {% endfor %}</p>{% endif %}
+      {% if not basis_added and not basis_removed %}<p class="muted">两个版本的依据集合一致。</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="card card-wide">
+    <div class="card-header"><h2 class="card-title">成本明细差异</h2></div>
+    <div class="card-body table-wrap">
+      <table class="data-table compact">
+        <thead><tr><th>费用项</th><th class="text-right">v{{ lv.version_no }}（元）</th><th class="text-right">v{{ rv.version_no }}（元）</th><th class="text-right">差额</th></tr></thead>
+        <tbody>
+          {% for row in item_rows %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td class="text-right mono">{{ "%.2f"|format(row.left or 0) }}</td>
+            <td class="text-right mono">{{ "%.2f"|format(row.right or 0) }}</td>
+            <td class="text-right mono {% if row.delta and row.delta > 0 %}diff-up{% elif row.delta and row.delta < 0 %}diff-down{% endif %}">{{ "%+.2f"|format(row.delta) if row.delta is not none else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card card-wide">
+    <div class="card-header"><h2 class="card-title">正文差异（v{{ lv.version_no }} → v{{ rv.version_no }}）</h2></div>
+    <div class="card-body">
+      <pre class="diff-block">{% for line in diff_lines %}<span class="diff-{{ line.kind }}">{{ line.text }}</span>
+{% endfor %}</pre>
+      <p class="muted small">高亮仅为文本差异；金额请以上方明细/摘要为准。</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -72,6 +72,7 @@
   ('note', '备注')
 ] %}
 {% set binding_opts = binding_options if binding_options is defined and binding_options else ['胶装', '骑马订', '精装', '锁线胶装', '线圈装'] %}
+{% set paper_opts = paper_types if paper_types is defined and paper_types else [] %}
 {% set process_opts = (['无'] + process_options) if process_options is defined and process_options else ['无', '覆膜', 'UV', '烫金'] %}
 {% set format_opts = formats if formats is defined and formats else ['16开', '32开', '大32开'] %}
 {% set sm = business_status.get(tstatus, ('未知', 'badge-gray')) %}
@@ -82,6 +83,7 @@
 
 <div id="task-detail"
      data-task-id="{{ task_id }}"
+     data-task-no="{{ t.task_no|default('') }}"
      data-revision="{{ revision }}"
      data-task-status="{{ tstatus }}"
      data-ai-id="{{ ai_id }}"
@@ -125,7 +127,14 @@
   {% elif tstatus == 'COMPLETED' %}
   <div class="notice notice-success">任务已完成，结果版本已冻结，可在“⑥ 结果版本”中查看历史版本内容。</div>
   {% elif tstatus == 'REJECTED' %}
-  <div class="notice notice-danger">任务已被退回：请根据审核意见修改参数或版本后重新提交审核。</div>
+  <div class="notice notice-danger">
+      任务已被退回：请根据审核意见修改参数或版本后重新提交审核。
+      {% if last_reject_opinion %}<div class="field-hint">最近审核意见：{{ last_reject_opinion }}</div>{% endif %}
+      {% if allow_edit %}
+      <button class="btn btn-primary btn-sm mt-8" type="button" id="btn-rerun-by-review"
+              data-review-note="{{ last_reject_opinion|e }}">按审核意见重新运行</button>
+      {% endif %}
+    </div>
   {% endif %}
 
   {% if t.goal %}
@@ -210,8 +219,15 @@
         </div>
         <div class="field">
           <label for="edit-paper_type">纸张</label>
-          <input id="edit-paper_type" type="text" maxlength="50" required list="paper-suggestions"
-                 value="{{ p.paper_type|default('') }}">
+          <select id="edit-paper_type" required>
+            <option value="">请选择纸张</option>
+            {% for paper in paper_opts %}
+            <option value="{{ paper }}"{% if p.paper_type|default('') == paper %} selected{% endif %}>{{ paper }}</option>
+            {% endfor %}
+            {% if p.paper_type and p.paper_type not in paper_opts %}
+            <option value="{{ p.paper_type }}" selected>{{ p.paper_type }}（当前值）</option>
+            {% endif %}
+          </select>
         </div>
         <div class="field">
           <label for="edit-binding">装订方式</label>
@@ -395,6 +411,7 @@
           {% if not result %}依据未校验{% elif basis_ok is none %}依据未校验{% elif basis_ok|string in ['1', 'true', 'True', 'yes'] %}依据校验通过{% else %}依据存在不确定{% endif %}
         </span>
         <button class="btn btn-ghost btn-sm" type="button" id="btn-result-refresh"{% if not ai_id %} hidden{% endif %}>刷新结果</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="btn-export-result"{% if not result %} hidden{% endif %}>导出 Markdown</button>
         {% if allow_edit and not plans %}<button class="btn btn-ghost btn-sm" type="button" id="btn-adopt-ai"{% if not result %} hidden{% endif %}>采用此结果</button>{% endif %}
       </div>
     </div>
@@ -580,7 +597,10 @@
   <section class="card" id="section-versions">
     <div class="card-header">
       <h2 class="card-title"><span class="sec-num">⑥</span> 结果版本 <span class="count-pill">{{ vlist|length }}</span></h2>
-      <span class="hint">版本只增不改；提交审核/通过后对应版本冻结</span>
+      <div class="card-actions">
+        {% if vlist|length >= 2 %}<a class="btn btn-ghost btn-sm" href="/tasks/{{ task_id }}/versions/compare">版本对比</a>{% endif %}
+        <span class="hint">版本只增不改；提交审核/通过后对应版本冻结</span>
+      </div>
     </div>
     <div class="card-body">
       {% if vlist %}

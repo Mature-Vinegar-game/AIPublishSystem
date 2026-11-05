@@ -92,14 +92,16 @@
 
         <div class="field">
           <label for="paper_type">纸张 <span class="req">*</span></label>
-          <input id="paper_type" name="paper_type" type="text" required maxlength="50" list="paper-suggestions"
-                 value="{{ f.paper_type|default('') }}" placeholder="如：铜版纸157g">
-          <datalist id="paper-suggestions">
+          <select id="paper_type" name="paper_type" required>
+            <option value="">请选择纸张</option>
             {% for paper in paper_opts %}
-            <option value="{{ paper }}"></option>
+            <option value="{{ paper }}"{% if f.paper_type|default('') == paper %} selected{% endif %}>{{ paper }}</option>
             {% endfor %}
-          </datalist>
-          <div class="field-hint">须与资料库中 type=paper 的纸张名称匹配，否则无法取到单价。</div>
+            {% if f.paper_type and f.paper_type not in paper_opts %}
+            <option value="{{ f.paper_type }}" selected>{{ f.paper_type }}（当前值）</option>
+            {% endif %}
+          </select>
+          <div class="field-hint">选项来自资料库 type=paper；新增纸张后刷新页面即可选择。</div>
           <div class="field-error" data-error-for="paper_type"></div>
         </div>
 

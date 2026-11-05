@@ -38,11 +38,21 @@
   </div>
   <div class="page-actions">
     <a class="btn btn-ghost" href="/tasks">刷新</a>
+    {% if user and user.role_code == 'reviewer' %}
+    <a class="btn btn-primary" href="/tasks?status=PENDING_REVIEW">待我审核</a>
+    {% endif %}
     {% if is_operator %}
     <a class="btn btn-primary" href="/tasks/new">＋ 新建任务</a>
         <a class="btn btn-ghost" href="/tasks/new-plan">＋ 方案模式</a>
     {% endif %}
   </div>
+</div>
+
+<div class="quick-filters" aria-label="任务状态快捷筛选">
+  {% for value in ['ALL', 'PENDING', 'PENDING_REVIEW', 'REJECTED', 'COMPLETED'] %}
+  <a class="chip{% if sf == value %} is-active{% endif %}" href="/tasks?status={{ value|urlencode }}{% if kw %}&keyword={{ kw|urlencode }}{% endif %}">{{ filter_labels[value] }}</a>
+  {% endfor %}
+  {% if kw %}<span class="chip chip-note">关键词：{{ kw }}</span>{% endif %}
 </div>
 
 <div class="card">
