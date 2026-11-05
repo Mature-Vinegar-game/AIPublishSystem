@@ -601,10 +601,101 @@
 
   /* ---------------- AI 轮询与结果渲染 ---------------- */
 
+  function mdEscape(value) {
+    return str(value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function mdInline(value) {
+    var text = mdEscape(value);
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    return text;
+  }
+
+  function renderMarkdown(raw) {
+    var text = str(raw || '').replace(/\r\n/g, '\n');
+    if (!text.trim()) { return ''; }
+    var lines = text.split('\n');
+    var out = [];
+    var i = 0;
+    function isTableLine(line) { return /^\s*\|.*\|\s*$/.test(line); }
+    function isSeparator(line) { return /^\s*\|?[\s:|-]+\|?\s*$/.test(line); }
+    function tableCells(line) {
+      return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (cell) {
+        return mdInline(cell.trim());
+      });
+    }
+    while (i < lines.length) {
+      var line = lines[i];
+      if (!line.trim()) { i += 1; continue; }
+      var heading = line.match(/^(#{1,4})\s+(.*)$/);
+      if (heading) {
+        var level = heading[1].length;
+        out.push('<h' + level + ' class="md-h' + level + '">' + mdInline(heading[2]) + '</h' + level + '>');
+        i += 1;
+        continue;
+      }
+      if (/^---+$/.test(line.trim())) { out.push('<hr>'); i += 1; continue; }
+      if (isTableLine(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
+        var rows = [];
+        i += 2;
+        while (i < lines.length && isTableLine(lines[i])) { rows.push(tableCells(lines[i])); i += 1; }
+        var head = tableCells(line);
+        out.push('<div class="md-table-wrap"><table class="md-table"><thead><tr>' + head.map(function (cell) { return '<th>' + cell + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function (row) {
+          return '<tr>' + row.map(function (cell) { return '<td>' + cell + '</td>'; }).join('') + '</tr>';
+        }).join('') + '</tbody></table></div>');
+        continue;
+      }
+      var ul = line.match(/^\s*[-*]\s+(.*)$/);
+      if (ul) {
+        var items = [];
+        while (i < lines.length) {
+          var m = lines[i].match(/^\s*[-*]\s+(.*)$/);
+          if (!m) { break; }
+          items.push('<li>' + mdInline(m[1]) + '</li>');
+          i += 1;
+        }
+        out.push('<ul class="md-list">' + items.join('') + '</ul>');
+        continue;
+      }
+      var ol = line.match(/^\s*\d+\.\s+(.*)$/);
+      if (ol) {
+        var oitems = [];
+        while (i < lines.length) {
+          var om = lines[i].match(/^\s*\d+\.\s+(.*)$/);
+          if (!om) { break; }
+          oitems.push('<li>' + mdInline(om[1]) + '</li>');
+          i += 1;
+        }
+        out.push('<ol class="md-list">' + oitems.join('') + '</ol>');
+        continue;
+      }
+      var para = [line.trim()];
+      i += 1;
+      while (i < lines.length && lines[i].trim() && !/^(#{1,4})\s+/.test(lines[i]) && !/^\s*[-*]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i]) && !isTableLine(lines[i]) && !/^---+$/.test(lines[i].trim())) {
+        para.push(lines[i].trim());
+        i += 1;
+      }
+      out.push('<p>' + mdInline(para.join(' ')) + '</p>');
+    }
+    return out.join('');
+  }
+
+  function applyMarkdownNode(node) {
+    if (!node) { return; }
+    var raw = node.getAttribute('data-raw');
+    if (raw === null || raw === undefined) { raw = node.textContent || ''; }
+    node.setAttribute('data-raw', raw);
+    node.innerHTML = renderMarkdown(raw);
+  }
+
   function initTaskDetail() {
     var root = el('task-detail');
     if (!root) { return; }
 
+    applyMarkdownNode(el('result-content-md'));
     var taskId = str(root.getAttribute('data-task-id'));
     var revision = Number(root.getAttribute('data-revision') || 1);
     var canEdit = root.getAttribute('data-can-edit') === '1';
@@ -1100,7 +1191,7 @@
       if (!missing.length) { missing = structuredMissing; }
 
       var md = el('result-content-md');
-      if (md) { md.textContent = str(r.content_md); }
+      if (md) { var mdRaw = str(r.content_md) || ''; md.setAttribute('data-raw', mdRaw); md.innerHTML = renderMarkdown(mdRaw); }
       setText('result-total', formatMoney(structured.total));
       setText('result-per-copy', formatMoney(structured.per_copy));
       renderLineItems(lineItems);

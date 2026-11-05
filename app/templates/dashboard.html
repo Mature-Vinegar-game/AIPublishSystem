@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}运行仪表盘 · 印制参数校验与成本测算 AI 系统{% endblock %}
+{% block content %}
+{% set d = dashboard %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">运行仪表盘</h1>
+    <p class="page-sub">任务、AI 运行、工具调用与审核情况总览（只读统计）。</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-ghost" href="/tasks">任务列表</a>
+    <a class="btn btn-ghost" href="/system">系统信息</a>
+  </div>
+</div>
+
+<div class="dash-cards">
+  <div class="dash-card"><span class="dash-label">业务任务</span><strong class="dash-value">{{ d.task_total }}</strong><span class="dash-sub">全部状态</span></div>
+  <div class="dash-card"><span class="dash-label">AI 运行</span><strong class="dash-value">{{ d.ai_total }}</strong><span class="dash-sub">成功率 {{ d.success_rate }}%</span></div>
+  <div class="dash-card"><span class="dash-label">工具调用</span><strong class="dash-value">{{ d.tool_total }}</strong><span class="dash-sub">执行记录</span></div>
+  <div class="dash-card"><span class="dash-label">平均耗时</span><strong class="dash-value">{{ d.avg_elapsed }}s</strong><span class="dash-sub">AI 单次运行</span></div>
+  <div class="dash-card"><span class="dash-label">方案任务</span><strong class="dash-value">{{ d.plan_total }}</strong><span class="dash-sub">待运行 {{ d.plan_pending }}</span></div>
+  <div class="dash-card"><span class="dash-label">版本 / 审核</span><strong class="dash-value">{{ d.version_total }} / {{ d.review_total }}</strong><span class="dash-sub">可追溯记录</span></div>
+</div>
+
+<div class="dash-grid">
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">任务状态分布</h2></div>
+    <div class="card-body">
+      {% for item in d.task_status_items %}
+      <div class="bar-row">
+        <span class="bar-label">{{ item.label }}</span>
+        <div class="bar-track"><span class="bar-fill" style="width: {{ item.pct }}%"></span></div>
+        <span class="bar-value">{{ item.count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">AI 运行状态</h2></div>
+    <div class="card-body">
+      {% for item in d.ai_status_items %}
+      <div class="bar-row">
+        <span class="bar-label">{{ item.label }}</span>
+        <div class="bar-track"><span class="bar-fill {{ 'bar-ok' if item.key == 'SUCCEEDED' else ('bar-bad' if item.key == 'FAILED' else '') }}" style="width: {{ item.pct }}%"></span></div>
+        <span class="bar-value">{{ item.count }}</span>
+      </div>
+      {% endfor %}
+      <p class="muted small">成功率 {{ d.success_rate }}%；平均单次耗时 {{ d.avg_elapsed }}s（含真实模型调用）。</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">工具调用 Top</h2></div>
+    <div class="card-body table-wrap">
+      <table class="data-table compact">
+        <thead><tr><th>工具</th><th class="text-right">调用次数</th></tr></thead>
+        <tbody>
+          {% for item in d.tool_items %}
+          <tr><td class="mono">{{ item.name }}</td><td class="text-right">{{ item.count }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="muted">暂无调用记录</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">依据来源 Top</h2></div>
+    <div class="card-body table-wrap">
+      <table class="data-table compact">
+        <thead><tr><th>资料 / 规则 ID</th><th class="text-right">被引用</th></tr></thead>
+        <tbody>
+          {% for item in d.source_items %}
+          <tr><td class="mono">{{ item.id }}</td><td class="text-right">{{ item.count }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="muted">暂无依据记录</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card dash-wide">
+    <div class="card-header"><h2 class="card-title">最近任务</h2></div>
+    <div class="card-body table-wrap">
+      <table class="data-table compact">
+        <thead><tr><th>任务编号</th><th>标题</th><th>类型</th><th>状态</th><th>创建时间</th></tr></thead>
+        <tbody>
+          {% for t in d.recent_items %}
+          <tr>
+            <td class="mono nowrap"><a href="/tasks/{{ t.id }}">{{ t.task_no }}</a></td>
+            <td>{{ t.title }}</td>
+            <td><span class="badge {{ 'badge-blue' if t.business_type == 'print_cost_plan' else 'badge-gray' }}">{{ '方案模式' if t.business_type == 'print_cost_plan' else '标准任务' }}</span></td>
+            <td>{{ t.status_label }}</td>
+            <td class="muted nowrap">{{ t.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 class="card-title">验收基线（示例任务）</h2></div>
+    <div class="card-body">
+      {% if d.baseline.total is not none %}
+      <div class="baseline-row"><span>总成本</span><strong>{{ "%.2f"|format(d.baseline.total) }} 元</strong></div>
+      <div class="baseline-row"><span>单册成本</span><strong>{{ "%.2f"|format(d.baseline.per_copy) }} 元</strong></div>
+      <div class="baseline-row"><span>预期基线</span><strong>14638.00 / 4.88</strong></div>
+      <p class="muted small">来自示例任务 BT-DEMO-0001 的最新结果，用于快速核对真实调用结果。</p>
+      {% else %}
+      <p class="muted">暂无示例任务结果。</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

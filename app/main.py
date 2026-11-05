@@ -63,8 +63,12 @@ from app.models import (
     TASK_STATUS_LABELS,
     AiResult,
     AiTask,
+    BusinessTask,
     Material,
+    ResultVersion,
+    ReviewRecord,
     Rule,
+    ToolCallRecord,
 )
 from app.schemas import MaterialCreateRequest, RuleCreateRequest
 from app.services import basis_service, task_service, version_service
@@ -466,6 +470,114 @@ def index():
 
 
 # ============================ 任务列表 ============================
+def _dashboard_context(user: Optional[dict], db: Session) -> dict:
+    """运行仪表盘：任务/AI/工具/版本/审核统计（只读）。"""
+    from collections import Counter
+
+    tasks = db.query(BusinessTask).all()
+    ai_tasks = db.query(AiTask).all()
+    tool_calls = db.query(ToolCallRecord).all()
+    versions = db.query(ResultVersion).all()
+    reviews = db.query(ReviewRecord).all()
+
+    task_status_order = ["PENDING", "PENDING_REVIEW", "REJECTED", "COMPLETED"]
+    task_counts = Counter(str(getattr(t, "status", "") or "") for t in tasks)
+    task_total = len(tasks) or 1
+    task_status_items = []
+    for key in task_status_order:
+        count = int(task_counts.get(key, 0))
+        label = TASK_STATUS_LABELS.get(key, key)
+        task_status_items.append(
+            {"key": key, "label": label, "count": count, "pct": round(count * 100.0 / task_total, 1)}
+        )
+
+    ai_counts = Counter(str(getattr(a, "status", "") or "") for a in ai_tasks)
+    ai_total = len(ai_tasks) or 1
+    ai_status_items = []
+    for key, label in (("SUCCEEDED", "完成"), ("FAILED", "失败"), ("RUNNING", "运行中"), ("PENDING", "待执行")):
+        count = int(ai_counts.get(key, 0))
+        ai_status_items.append({"key": key, "label": label, "count": count, "pct": round(count * 100.0 / ai_total, 1)})
+    success_rate = round(ai_counts.get("SUCCEEDED", 0) * 100.0 / ai_total, 1) if ai_tasks else 0.0
+
+    elapsed_values = []
+    for ai in ai_tasks:
+        counters = basis_service.parse_json(getattr(ai, "counters_json", None), {})
+        if isinstance(counters, dict) and isinstance(counters.get("elapsed_ms"), (int, float)):
+            elapsed_values.append(float(counters["elapsed_ms"]))
+    avg_elapsed = round(sum(elapsed_values) / len(elapsed_values) / 1000.0, 1) if elapsed_values else 0.0
+
+    tool_counts = Counter(str(getattr(c, "tool_name", "") or "") for c in tool_calls)
+    tool_items = [
+        {"name": name, "count": count}
+        for name, count in tool_counts.most_common(10)
+    ]
+
+    source_counter: Counter = Counter()
+    for call in tool_calls:
+        ids = basis_service.parse_json(getattr(call, "source_ids_json", None), [])
+        if isinstance(ids, list):
+            for sid in ids:
+                sid = str(sid or "").strip()
+                if sid:
+                    source_counter[sid] += 1
+    source_items = [{"id": sid, "count": count} for sid, count in source_counter.most_common(8)]
+
+    plan_tasks = [t for t in tasks if str(getattr(t, "business_type", "")) == "print_cost_plan"]
+    recent = sorted(tasks, key=lambda t: str(getattr(t, "created_at", "") or ""), reverse=True)[:8]
+    recent_items = [
+        {
+            "id": t.id,
+            "task_no": t.task_no,
+            "title": t.title,
+            "status": t.status,
+            "status_label": TASK_STATUS_LABELS.get(t.status, t.status),
+            "business_type": t.business_type,
+            "created_at": t.created_at,
+        }
+        for t in recent
+    ]
+
+    baseline = db.query(AiResult).filter(AiResult.business_task_id == 1).order_by(AiResult.id.desc()).first()
+    baseline_data = {}
+    if baseline is not None:
+        structured = basis_service.parse_json(baseline.structured_json, {})
+        baseline_data = {
+            "total": structured.get("total"),
+            "per_copy": structured.get("per_copy"),
+            "created_at": baseline.created_at,
+        }
+
+    return _page_context(
+        user,
+        "dashboard",
+        dashboard={
+            "task_total": len(tasks),
+            "ai_total": len(ai_tasks),
+            "tool_total": len(tool_calls),
+            "version_total": len(versions),
+            "review_total": len(reviews),
+            "task_status_items": task_status_items,
+            "ai_status_items": ai_status_items,
+            "success_rate": success_rate,
+            "avg_elapsed": avg_elapsed,
+            "tool_items": tool_items,
+            "source_items": source_items,
+            "plan_total": len(plan_tasks),
+            "plan_pending": sum(1 for t in plan_tasks if t.status == "PENDING"),
+            "recent_items": recent_items,
+            "baseline": baseline_data,
+        },
+    )
+
+
+@app.get("/dashboard", include_in_schema=False)
+def dashboard_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request)
+    if user is None:
+        return _login_redirect()
+    return _render(request, "dashboard.html", _dashboard_context(user, db))
+
+
 @app.get("/tasks", include_in_schema=False)
 def tasks_page(
     request: Request,

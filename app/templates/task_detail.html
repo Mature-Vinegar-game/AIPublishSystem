@@ -409,7 +409,7 @@
         <div class="result-top">
           <div class="result-content">
             <h3 class="sub-title">成本测算说明</h3>
-            <div class="md" id="result-content-md">{{ result.content_md|default('') if result else '' }}</div>
+            <div class="md" id="result-content-md" data-raw="{{ result.content_md|default('') if result else '' }}">{{ result.content_md|default('') if result else '' }}</div>
           </div>
           <aside class="result-summary">
             <div class="total-card">
